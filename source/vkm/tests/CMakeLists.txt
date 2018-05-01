@@ -2,6 +2,7 @@ add_executable( vkm_test_all
   test_driver.cxx
   test_binary_regions.cxx
   test_containment_tree.cxx
+  test_obj_io.cxx
   test_ground_truth.cxx
   test_metrics.cxx
 )

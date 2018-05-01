@@ -9,8 +9,6 @@ source /src/wrap
 
 if [ "${@+$1}" == "compile" ]; then
   exec bash /src/scripts/compile.bsh
-elif [ "${@+$1}" == "test" ]; then
-  exec bash /src/scripts/test.bsh
 else
   exec "${@}"
 fi

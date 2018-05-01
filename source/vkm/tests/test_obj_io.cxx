@@ -23,20 +23,8 @@
 
 static void test_obj_io()
 {
-  using namespace OpenMesh;
-  typedef OpenMesh::TriMesh_ArrayKernelT<> TriMesh;
-  typedef OpenMesh::PolyMesh_ArrayKernelT<> PolyMesh;
-
-  std::string test_dir ="C:/VisionSystems/CORE3D/CityEngine/siteplan/hypo_tests/";
-  std::string scene_path = test_dir + "roof_footprint.obj";
-  std::string junk_path = test_dir + "junk.obj";
-  std::map<size_t, std::map<size_t,PolyMesh> > scene;
-  vkm_obj_io::read_composite_obj_file(scene_path, scene);
-  PolyMesh& mesh = scene[1][3];
-  for(PolyMesh::VertexIter vit = mesh.vertices_begin();
-	  vit != mesh.vertices_end(); ++vit)
-	  std::cout << *vit << ' ' << mesh.point(*vit) << std::endl;
- // vkm_obj_io::write_composite_obj_file(junk_path,scene);  /// to do make real test
- // vkm_obj_io::write_composite_obj_file(junk_path, scene[1]);
+  //********************
+  // TODO: unit test
+  //********************
 }
 TESTMAIN(test_obj_io);

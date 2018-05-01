@@ -32,9 +32,20 @@ jobs:
       - run:
           name: Build all dockers
           shell: /bin/bash -eo pipefail
-          command: ./wrap just build
+          command: |
+            source setup.env
+            just build
 
       - run:
           name: Compile source code
           shell: /bin/bash -eo pipefail
-          command: ./wrap just compile
+          command: |
+            source setup.env
+            just compile
+
+      - run:
+          name: Tests
+          shell: /bin/bash -eo pipefail
+          command: |
+            source setup.env
+            just test

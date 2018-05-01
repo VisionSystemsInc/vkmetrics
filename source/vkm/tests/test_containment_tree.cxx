@@ -40,7 +40,7 @@ static void test_containment_tree()
   vkm_containment_tree cont_tree(poly_map);
   cont_tree.process();
   std::map < size_t,  mc_region_2d>& mcrs = cont_tree.mc_regions();
- bool good =  mcrs[0].holes_.size() == 1;
+  bool good =  mcrs[0].holes_.size() == 1;
   good = good && mcrs[1].holes_.size() == 2;
   good = good && mcrs[2].holes_.size() == 0;
   good = good && mcrs[3].holes_.size() == 0;

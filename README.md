@@ -1,18 +1,23 @@
 This README is incomplete, but will have additions made to it as the project develops.
 
-# Core3D Bottom up processing
+# VK-Metrics
 
-This project aims to extract information from 3D models created from high resolution Digital Elevation Models. The goal is compact high level explanation of the underlying geometry. This is accomplished through a set of techniques to fit primitive geometric shapes to point clouds.
+This project aims to provide metrics for the IARPA CORE3D program.  Functionality includes:
+
+* Constructing 3D ground truth models from gridded LiDAR and manual building annotation
+
+* Measuring similiarty between 3D ground truth models and performer models
+
 
 ## Dependencies
 
-This project is designed to be run within a docker container, meaning the dependencies should be mitigated. There are some requirements however.
+This project is designed to be run within a docker container, meaning the dependencies should be mitigated. Minimal requirements:
 
 [git](https://git-scm.com/downloads) version control (how you should be downloading this repo)
 
 [Docker](https://www.docker.com/get-docker) which provides a platform independent container for everything we build
 
-[Docker compose 1.19 or newer](https://docs.docker.com/compose/install/) which manages running multiple docker applications
+[Docker compose 1.20 or newer](https://docs.docker.com/compose/install/) which manages running multiple docker applications
 
 ### submodules
 
@@ -27,7 +32,7 @@ git clone --recursive git@bitbucket.org:visionsystemsinc/vkm.git
 ```
 source setup.env
 
-just install
+just sync
 
 ```
 
@@ -36,7 +41,8 @@ Install may take some time (possibly 10 minutes or more depending on hardware).
 
 ## Building
 
-We recommend using bash. This is the default shell for macOS and many flavors of Linux. On windows installing git installs git bash by default.
+We recommend using bash. This is the default shell for macOS and many flavors of Linux. 
+On windows installing git installs git bash by default.
 
 
 ## Elevated permissions
@@ -46,7 +52,7 @@ available to simulate basic sudo functionality.
 
 ## Updating
 
-Updating the entire core3d system can involve many steps. These steps are all run
+Updating the entire system can involve many steps. These steps are all run
 for you when you run
 
 ```
@@ -65,13 +71,21 @@ These modules come from external projects and may be updated periodically from t
 
 Library for generic and efficient representation and manipulation of polygonal meshes. More info at https://www.openmesh.org/
 
+#### VXL
+
+The Vision something Library. contains a wide array of different computer vision, 3D processing and mathematics libraries for use in computer vision and related applications. See http://vxl.sourceforge.net/ for more information.
+
 #### VSI_common
 
 A set of common tools for use across VSI applications. This includes the 'just' command and other scripts
 
-#### VXL
+#### pybind11
 
-The Vision something Library. contains a wide array of different computer vision, 3D processing and mathematics libraries for use in computer vision and related applications. See http://vxl.sourceforge.net/ for more information.
+pybind11 is a lightweight header-only library that exposes C++ types in Python and vice versa, mainly to create Python bindings of existing C++ code.
+See https://pybind11.readthedocs.io/en/stable/ for more information.
+
+VXL, OpenMesh, and VKM functionality are accessible in python using pybind11 bindings.
+
 
 ## Adding 3rd party software
 
@@ -117,10 +131,3 @@ manually.
 Using `pipenv` and these tools, you should be able to both customize your local
 virtual environment, and shared python packages with everyone on the team.
 
-## TODOs
-
-Integrate preprocessing and DEM generation
-
-Full pipeline automation
-
-More complete unit tests
