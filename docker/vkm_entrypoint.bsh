@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -eu
+groupadd user -g "${GROUP_ID-1000}" -o || :
+useradd -u "${USER_ID-1000}" -o --create-home --home-dir /home/user -g user user || :
+chmod 777 /
+#TODO: clean up hack with something from vsi_common
+source /src/wrap
+
+if [ "$(stat -c %u /venv/src-*)" != "${USER_ID}" ]; then
+  echo "Reowning virtualenv..."
+  chown -R "${USER_ID-1000}:${GROUP_ID-1000}" /venv/src-*
+fi
+
+for s in /install/lib/python3.5/site-packages/*.so; do
+  gosu user ln -sf "${s}" /venv/src-*/lib/python3.5/site-packages/
+done
+
+function sudo()
+{
+  gosu root ${@+"${@}"}
+}
+export -f sudo
+
+if [ "${@+$1}" == "test" ]; then
+  exec gosu user pipenv run /src/scripts/test.bsh
+elif [ "$1" = "enter" ]; then
+  exec gosu user pipenv shell
+else
+  exec gosu user "${@}"
+fi
+

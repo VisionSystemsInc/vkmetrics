@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -eu
+# groupadd user -g ${GROUP_ID-1000} -o || :
+# useradd -u ${USER_ID-1000} -o --create-home --home-dir /home/user -g user user || :
+
+#TODO: clean up hack with something from vsi_common
+source /src/wrap
+
+if [ "${@+$1}" == "compile" ]; then
+  exec bash /src/scripts/compile.bsh
+elif [ "${@+$1}" == "test" ]; then
+  exec bash /src/scripts/test.bsh
+else
+  exec "${@}"
+fi
+

@@ -1,1 +1,7 @@
-# Add any directories, files, or patterns you don't want to be tracked by version control
+/build*/
+/local*/
+local.env
+local_post.env
+docs
+*.pyc
+__pycache__/

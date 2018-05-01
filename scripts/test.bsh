@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+set -euE
+
+# check for install directory (where tests exist)
+if ! [ -d "${VKM_INSTALL_DIR}" ]; then
+  echo "Install directory (${VKM_INSTALL_DIR}) appears to be missing"
+  echo "You have to mount the install directory in order to run tests"
+  echo "Try: -v ${VKM_INSTALL_DIR_HOST}:${VKM_INSTALL_DIR}"
+  exit 1
+fi
+
+# run tests
+/install/bin/vkm_test_all
+

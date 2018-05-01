@@ -1,0 +1,35 @@
+version: '2.3'
+services:
+
+  compiler:
+    build:
+      context: .
+      dockerfile: docker/compiler.Dockerfile
+    image: ${VKM_DOCKER_REPO}:compiler
+    volumes:
+      - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}
+      - ${VKM_BUILD_DIR}:${VKM_BUILD_DIR_DOCKER}
+      - ${VKM_INSTALL_DIR}:${VKM_INSTALL_DIR_DOCKER}
+
+  vkm:
+    build:
+      context: .
+      dockerfile: docker/vkm.Dockerfile
+    image: ${VKM_DOCKER_REPO}:vkm
+    environment:
+      - USER_ID=${VKM_UID}
+      - GROUP_ID=${VKM_GID}
+    volumes:
+      - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}
+      - ${VKM_INSTALL_DIR}:${VKM_INSTALL_DIR_DOCKER}
+      - ${VKM_VENV_DIR}:${VKM_VENV_DIR_DOCKER}
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+
+
+volumes:
+  vkm-bin:
+  vkm-build:
+  vkm-venv:
