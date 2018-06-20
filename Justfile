@@ -39,6 +39,15 @@ function caseify()
       extra_args+=$#
       ;;
 
+    truth) #Run ground truth routine
+      (source "${VKM_CWD}/scripts/task.bsh" truth "${@}")
+      extra_args+=$#
+      ;;
+
+    metrics) #Run metrics routine
+      (source "${VKM_CWD}/scripts/task.bsh" metrics "${@}")
+      extra_args+=$#
+      ;;
 
     ### Environment synchronize
     sync) # Sync the environment so that everyone is on the same version. This

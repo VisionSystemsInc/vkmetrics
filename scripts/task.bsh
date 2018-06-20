@@ -1,0 +1,241 @@
+#!/usr/bin/env bash
+
+# set bash arguments
+set -euE
+
+# this script
+RUNTIME_SCRIPT="${BASH_SOURCE[0]}"
+
+# directories/files inside docker
+RUNTIME_SCRIPT_DOCKER=${RUNTIME_SCRIPT_DOCKER-"//vsi/script.bsh"}
+PYTHON_DIR_DOCKER=${PYTHON_DIR_DOCKER-"/vsi/python"}
+
+INPUT_DIR_DOCKER=${INPUT_DIR_DOCKER-"/vsi/input"}
+OUTPUT_DIR_DOCKER=${OUTPUT_DIR_DOCKER-"/vsi/output"}
+
+
+# metrics main argument
+task_arg=$1
+shift 1
+case ${task_arg} in
+
+
+  # GROUND TRUTH=======================================================
+
+  # ground truth main command
+  truth)
+
+    # setup (passing all additional arguments)
+    source ${RUNTIME_SCRIPT} truth-setup "${@}"
+
+    # subshell for logging
+    (
+      echo "INPUT_DIR  = ${INPUT_DIR}"
+      echo "OUTPUT_DIR = ${OUTPUT_DIR}"
+
+      # run code
+      VKM_VKM_VOLUMES+=( "${RUNTIME_VOLUMES[@]}" )
+      justify run pipenv run "${RUNTIME_SCRIPT_DOCKER}" truth-run ${ARGS}
+
+    ) 2>&1 | tee -a "${LOG_FILE}"
+
+    ;;
+
+  # ground truth setup (runs on host machine)
+  # parse inputs, create output directory, setup for input/output
+  # docker volumes, etc.
+  truth-setup)
+
+    # defaults
+    ARGS=
+    OUTPUT_STAMP=true
+
+    # get options
+    while [ $# -ge 1 ]; do
+      case "$1" in
+        -h|--help)
+          USAGE=(
+            ""
+            "USAGE: just truth [OPTIONS]"
+            ""
+            "OPTIONS"
+            "  -i, --input [PATH]        Input folder"
+            "  -o, --output [PATH]       Output folder"
+            "  --no-output-stamp         Do not create unique date-stamped output folder"
+            ""
+          )
+          printf '%s\n' "${USAGE[@]}"
+          exit
+          ;;
+        -i|--input)
+            INPUT_DIR=$2 ; shift 2 ;;
+        -o|--output)
+            OUTPUT_DIR=$2 ; shift 2 ;;
+        --no-output-stamp)
+            OUTPUT_STAMP=false ; shift 1 ;;
+        *)  # unknown option - append to additional arguments
+            ARGS+="$1 " ; shift 1 ;;
+      esac
+    done
+
+    # check options
+    if [ ! -v INPUT_DIR ]; then
+      echo "INPUT_DIR not defined" ; exit 1 ;
+    elif [ ! -d "${INPUT_DIR}" ]; then
+      echo "INPUT_DIR cannot be located <${INPUT}>" ; exit 1 ;
+    fi
+
+    if [ ! -v OUTPUT_DIR ]; then
+      echo "OUTPUT_DIR not defined" ; exit 1 ;
+    elif [ ! -d "${OUTPUT_DIR}" ]; then
+      echo "OUTPUT_DIR folder cannot be located <${OUTPUT_DIR}>" ; exit 1 ;
+    fi
+
+    # unique output folder
+    if [ "${OUTPUT_STAMP}" == "true" ]; then
+      OUTPUT_DIR+="/$(date '+%Y%m%d_%H%M%S_%N')"
+    fi
+
+    # python directory (only valid on host machine)
+    PYTHON_DIR="$(cd "$(dirname "${RUNTIME_SCRIPT}")/../source/engine"; pwd)"
+
+    # log file
+    LOG_FILE="${OUTPUT_DIR}/truth.log"
+
+    # create output folders & log file
+    mkdir -p "${OUTPUT_DIR}"
+    touch "${LOG_FILE}"
+
+    # runtime docker volumes
+    RUNTIME_VOLUMES=(
+        "${RUNTIME_SCRIPT}:${RUNTIME_SCRIPT_DOCKER}:ro"
+        "${PYTHON_DIR}:${PYTHON_DIR_DOCKER}:ro"
+        "${INPUT_DIR}:${INPUT_DIR_DOCKER}:ro"
+        "${OUTPUT_DIR}:${OUTPUT_DIR_DOCKER}"
+    )
+
+    ;;
+
+
+  # ground truth run (runs inside docker)
+  truth-run)
+    python3 "${PYTHON_DIR_DOCKER}/truth.py" \
+      -i "${INPUT_DIR_DOCKER}" \
+      -o "${OUTPUT_DIR_DOCKER}" \
+      "${@}"
+    ;;
+
+
+  # METRICS=======================================================
+
+  # metrics main command
+  metrics)
+
+    # setup (passing all additional arguments)
+    source ${RUNTIME_SCRIPT} metrics-setup "${@}"
+
+    # subshell for logging
+    (
+      echo "INPUT_DIR  = ${INPUT_DIR}"
+      echo "OUTPUT_DIR = ${OUTPUT_DIR}"
+
+      # run code
+      VKM_VKM_VOLUMES+=( "${RUNTIME_VOLUMES[@]}" )
+      justify run pipenv run "${RUNTIME_SCRIPT_DOCKER}" metrics-run ${ARGS}
+
+    ) 2>&1 | tee -a "${LOG_FILE}"
+
+    ;;
+
+  # metrics setup (runs on host machine)
+  # parse inputs, create output directory, setup for input/output
+  # docker volumes, etc.
+  metrics-setup)
+
+    # defaults
+    ARGS=
+    OUTPUT_STAMP=true
+
+    # get options
+    while [ $# -ge 1 ]; do
+      case "$1" in
+        -h|--help)
+          USAGE=(
+            ""
+            "USAGE: just metrics [OPTIONS]"
+            ""
+            "OPTIONS"
+            "  -i, --input [PATH]        Input folder"
+            "  -o, --output [PATH]       Output folder"
+            "  --no-output-stamp         Do not create unique date-stamped output folder"
+            ""
+          )
+          printf '%s\n' "${USAGE[@]}"
+          exit
+          ;;
+        -i|--input)
+            INPUT_DIR=$2 ; shift 2 ;;
+        -o|--output)
+            OUTPUT_DIR=$2 ; shift 2 ;;
+        --no-output-stamp)
+            OUTPUT_STAMP=false ; shift 1 ;;
+        *)  # unknown option - append to additional arguments
+            ARGS+="$1 " ; shift 1 ;;
+      esac
+    done
+
+    # check options
+    if [ ! -v INPUT_DIR ]; then
+      echo "INPUT_DIR not defined" ; exit 1 ;
+    elif [ ! -d "${INPUT_DIR}" ]; then
+      echo "INPUT_DIR cannot be located <${INPUT}>" ; exit 1 ;
+    fi
+
+    if [ ! -v OUTPUT_DIR ]; then
+      echo "OUTPUT_DIR not defined" ; exit 1 ;
+    elif [ ! -d "${OUTPUT_DIR}" ]; then
+      echo "OUTPUT_DIR folder cannot be located <${OUTPUT_DIR}>" ; exit 1 ;
+    fi
+
+    # unique output folder
+    if [ "${OUTPUT_STAMP}" == "true" ]; then
+      OUTPUT_DIR+="/$(date '+%Y%m%d_%H%M%S_%N')"
+    fi
+
+    # python directory (only valid on host machine)
+    PYTHON_DIR="$(cd "$(dirname "${RUNTIME_SCRIPT}")/../source/engine"; pwd)"
+
+    # log file
+    LOG_FILE="${OUTPUT_DIR}/truth.log"
+
+    # create output folders & log file
+    mkdir -p "${OUTPUT_DIR}"
+    touch "${LOG_FILE}"
+
+    # runtime docker volumes
+    RUNTIME_VOLUMES=(
+        "${RUNTIME_SCRIPT}:${RUNTIME_SCRIPT_DOCKER}:ro"
+        "${PYTHON_DIR}:${PYTHON_DIR_DOCKER}:ro"
+        "${INPUT_DIR}:${INPUT_DIR_DOCKER}:ro"
+        "${OUTPUT_DIR}:${OUTPUT_DIR_DOCKER}"
+    )
+
+    ;;
+
+
+  # metrics run (runs inside docker)
+  metrics-run)
+    python3 "${PYTHON_DIR_DOCKER}/metrics.py" \
+      -i "${INPUT_DIR_DOCKER}" \
+      -o "${OUTPUT_DIR_DOCKER}" \
+      "${@}"
+    ;;
+
+
+  # INVALID TASK==============================================
+  *)
+    echo "ERROR: Unknown option '$task_arg' to ${RUNTIME_SCRIPT}"
+    exit 1
+    ;;
+esac
+
