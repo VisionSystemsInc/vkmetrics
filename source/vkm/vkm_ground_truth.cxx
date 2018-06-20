@@ -734,7 +734,7 @@ static bool repair_topology_caseI(mc_region_2d& mcr_2d,
   return true;
 }
 
-bool vkm_ground_truth::insure_consistent_topology(size_t outer_index, mc_region_2d& mcr_2d) {
+bool vkm_ground_truth::ensure_consistent_topology(size_t outer_index, mc_region_2d& mcr_2d) {
   //
   // It is anticipated that a number of annotation issues will be repaired by this function
   //
@@ -815,7 +815,7 @@ void vkm_ground_truth::construct_polygon_soup(){
     mc_region_2d mcr_2d = cont_tree_.mc_regions()[indx];
 
     // potentially alter the topology of the region to repair inconsistencies
-    if(!insure_consistent_topology(indx, mcr_2d))
+    if(!ensure_consistent_topology(indx, mcr_2d))
       continue;
 
     //project the region vertices onto the fitted plane

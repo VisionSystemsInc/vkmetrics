@@ -116,7 +116,7 @@ public:
 
   //: correct the topology of the multiply-connected region due to annotation choices
   // occurs mainly when hole and outer cycle boundaries are coincident but not enclosing
-  bool insure_consistent_topology(size_t outer_index, mc_region_2d& mcr);
+  bool ensure_consistent_topology(size_t outer_index, mc_region_2d& mcr);
 
   //: construct 3-d polygons corresponding to the multiply connected regions
   void construct_polygon_soup();
