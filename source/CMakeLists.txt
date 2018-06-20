@@ -28,8 +28,8 @@ include_directories(${VKM_VXL_SOURCE_DIR}/contrib/brl/bbas)
 include_directories(${VKM_VXL_SOURCE_DIR}/contrib/gel)
 
 include_directories(${VKM_VXL_BINARY_DIR}/core)
-include_directories(${VKM_VXL_BINARY_DIR}/contrib)
 include_directories(${VKM_VXL_BINARY_DIR}/vcl)
+include_directories(${VKM_VXL_BINARY_DIR}/contrib)
 
 
 # Source ---------------------------------

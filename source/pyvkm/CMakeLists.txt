@@ -9,7 +9,7 @@ set(PYVKM_SOURCES
 )
 
 pybind11_add_module(pyvkm ${PYVKM_SOURCES})
-target_link_libraries(pyvkm PRIVATE OpenMeshCore OpenMeshTools)
+target_link_libraries(pyvkm PRIVATE vkm OpenMeshCore OpenMeshTools)
 set_target_properties(pyvkm PROPERTIES OUTPUT_NAME "vkm")
 
 execute_process(
