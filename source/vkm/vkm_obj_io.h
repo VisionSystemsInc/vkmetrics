@@ -18,12 +18,108 @@
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 //-----------------------------------------
 
-#include "vkm_vrml_color.h"
-
-
 class vkm_obj_io{
 
 public:
+
+  // Read a composite OBJ file, saving to a map of maps of meshes
+  template< typename MeshT >
+  static bool read_composite_obj_file(std::string const& obj_path,
+                                      std::map<size_t, std::map<size_t,MeshT> >& scene){
+
+    // open file
+    std::ifstream istr(obj_path.c_str());
+    if(!istr){
+      std::cout << "Failed to open " << obj_path << " for writing obj file" << std::endl;
+      return false;
+    }
+
+    std::string line;
+    std::string type;
+
+    std::string temp;
+    bool reading_major;
+    std::string smajor, sminor;
+
+    size_t major=0, minor=0;
+
+    MeshT mesh;
+
+    double x,y,z;
+    size_t i, offset=0;
+    std::vector<typename MeshT::VertexHandle> vhandles;
+
+    // loop through all available lines
+    while (std::getline(istr,line)) {
+
+      std::istringstream iss(line);
+      iss >> type;
+
+      // parse group identifier
+      if (type == "g") {
+
+        // save previous mesh
+        if (mesh.n_faces() > 0)
+          scene[major][minor] = mesh;
+
+        // clear mesh for new values
+        offset += mesh.n_vertices();
+        mesh.clear();
+
+        // update group identifiers
+        smajor.clear(); sminor.clear();
+        iss >> temp;
+
+        reading_major = true;
+        for(std::string::iterator sit = temp.begin(); sit != temp.end(); ++sit)
+        {
+          if (*sit == '_') {
+            reading_major = false;
+          } else if (reading_major) {
+            smajor.push_back(*sit);
+          } else {
+            sminor.push_back(*sit);
+          }
+        }
+
+        major = 0;
+        if (smajor.length() > 0)
+          major = std::stoi(smajor);
+
+        minor = 0;
+        if (sminor.length() > 0)
+          minor = std::stoi(sminor);
+
+      } //end type=='g'
+
+      // parse vertex
+      else if (type == "v") {
+        iss >> x >> y >> z;
+        mesh.add_vertex(typename MeshT::Point(x,y,z));
+
+      } //end type=='v'
+
+      // parse face
+      else if (type == "f") {
+        vhandles.clear();
+        while (iss >> i) {
+          vhandles.push_back(mesh.vertex_handle(i-1-offset));
+        }
+        mesh.add_face(vhandles);
+
+      } // end type=='f'
+
+    } // end line loop
+
+    // save last mesh
+    if (mesh.n_faces() > 0)
+      scene[major][minor] = mesh;
+
+    return true;
+
+  }
+
+
   // write out a set of mesh objects into a single file. The input is a set of mesh groups.
   // The mesh groups are given a unique group id to enable selection and manipulation
   // by mesh visualization tools (.e.g, CloudCompare)
@@ -131,97 +227,7 @@ public:
     return true;
   }
 
-  template< typename MeshT >
-  static bool read_composite_obj_file(std::string const& obj_path,
-                                      std::map<size_t, std::map<size_t,MeshT> >& scene){
 
-    std::ifstream istr(obj_path.c_str());
-    if(!istr){
-      std::cout << "Failed to open " << obj_path << " for writing obj file" << std::endl;
-      return false;
-    }
-    std::string gs, gids;
-    size_t gid = 0;
-    size_t start_id = 1;
-    size_t cum_id = 1;
-    size_t minor_id = 0;
-    std::map<size_t, size_t> vmap;
-    std::map<size_t, MeshT>  cur_mesh_group;
-    while(istr >> gs >> gids){
-      if(gs != "g"){
-        std::cout << "Parse failed " << gs << ' ' << gids << std::endl;
-        return false;
-      }
-      std::string majs, mins;
-      size_t temp;
-      bool reading_major = true;
-      for(std::string::iterator sit = gids.begin();
-          sit != gids.end(); ++sit){
-        if(reading_major&& *sit != '_'){
-          majs.push_back(*sit);
-		  continue;
-		}else if(*sit == '_'){
-          reading_major = false;
-          continue;
-        }
-        mins.push_back(*sit);
-      }
-
-      std::stringstream maj_ss(majs), min_ss(mins);
-      maj_ss >> temp;
-      min_ss >> minor_id;
-      MeshT mesh;
-      // read the mesh vertices
-      std::vector<typename MeshT::VertexHandle> in_vhandles;
-      std::string type;
-      while(true){
-        double x, y, z;
-        istr >> type;
-        if(type != "v" && type != "vn" ){
-          break;
-        }
-        istr >> x >> y >> z;
-        if(type == "v"){
-          typename MeshT::Point p(x, y, z);
-          in_vhandles.push_back(mesh.add_vertex(p));
-          cum_id++;
-        }
-      }//end while(true)
-
-      // read the face
-      if(type != "f"){
-       std::cout << "Parse failed " << type << std::endl;
-        return false;
-      }
-      std::vector<typename MeshT::VertexHandle> vhandles;
-      size_t k = 0;
-      for(size_t i = start_id; i<cum_id ; ++i, ++k){
-        size_t vh;
-        istr >> vh;
-        vhandles.push_back(in_vhandles[k]);
-      }
-      start_id = cum_id;
-      mesh.add_face(vhandles);
-      // end of face read
-
-      // add to scene[gid]
-      if(temp == gid){
-        cur_mesh_group[minor_id]=mesh;
-      }else{//end of gid meshes
-        if(cur_mesh_group.size()>0)
-		 scene[gid] = cur_mesh_group;
-        cur_mesh_group.clear();
-        cur_mesh_group[minor_id] = mesh;
-        gid = temp;
-      }
-    } // end of file
-
-    // add last set of meshes to the scene
-    if(cur_mesh_group.size())
-      scene[gid] = cur_mesh_group;
-	return true;
-
-  }
 
   // write out a set of mesh objects into a single file. Each mesh object is assigned a group id
   // for manipulation by mesh visualization tools.
@@ -395,149 +401,6 @@ public:
       ostr<<std::endl;
       groupInd ++;
     }
-    return true;
-  }
-
-  // map a property with real value on the range [0.0 1.0] to colors
-  static void map_prop_to_color(double prop, double& r, double& g, double& b){
-    if(prop<0.0) prop=0.0;
-    else if(prop>1.0) prop=1.0;
-    double ncolors = static_cast<double>(vkm_vrml_color::heatmap_custom_size);
-    size_t color_index = static_cast<size_t>(prop*(ncolors-1));
-    if(color_index>=vkm_vrml_color::heatmap_custom_size)
-      color_index = vkm_vrml_color::heatmap_custom_size - 1;
-    r = static_cast<double>(vkm_vrml_color::heatmap_custom[color_index][0])/255.0;
-    g = static_cast<double>(vkm_vrml_color::heatmap_custom[color_index][1])/255.0;
-    b = static_cast<double>(vkm_vrml_color::heatmap_custom[color_index][2])/255.0;
-  }
-
-  // write out a mesh with each vertex assigned a color according to the value of the designated property
-  // if the requested property is not present on the mesh, the method returns false.
-  template< typename MeshT >
-  static bool write_obj_file_vertex_prop_as_color(std::string const& obj_path , MeshT& mesh, std::string const& prop_name){
-    std::ofstream ostr(obj_path.c_str());
-    if(!ostr){
-      std::cout << "Failed to open " << obj_path << " for writing obj file" << std::endl;
-      return false;
-    }
-    OpenMesh::VPropHandleT< double > prop;
-    bool prop_valid = mesh.get_property_handle(prop, prop_name);
-    if(!prop_valid){
-      std::cout << "Property " << prop_name << " not valid on mesh" << std::endl;
-      return false;
-    }
-    // normalize property values
-    std::vector<double> properties;
-    double min_v = std::numeric_limits<double>::max(), max_v = -min_v;
-    for(typename MeshT::VertexIter vit = mesh.vertices_begin();
-        vit != mesh.vertices_end(); ++vit){
-      double pro = mesh.property(prop, *vit);
-      if(pro<min_v) min_v = pro;
-      if(pro>max_v) max_v = pro;
-      properties.push_back(pro);
-    }
-    size_t np = properties.size();
-    double low_val = min_v, high_val = max_v;
-    if(properties.size()>1000){
-    // compute tails to eliminate outliers
-      std::vector<double> temp = properties;
-      std::sort(temp.begin(), temp.end());
-      double tail = 0.025;//the tail cutoff fraction
-      size_t itail = static_cast<size_t>(np*tail);
-      low_val = temp[itail]; high_val = temp[np-1-itail];
-    }
-    double norm = 1.0;
-    double ndiff = 2.0*(high_val-low_val)/(high_val + fabs(low_val));
-    if(ndiff>0.00)
-      norm = 1.0/(high_val-low_val);
-    for(std::vector<double>::iterator pit = properties.begin();
-        pit != properties.end(); ++pit){
-      if((*pit)>=low_val && (*pit)<=high_val)
-        *pit = (*pit-low_val)*norm;
-      if((*pit)<low_val) *pit = 0.0;
-      if((*pit)>high_val) *pit = 1.0;
-    }
-    // write out the vertices
-    size_t k = 0;
-    mesh.request_vertex_normals();
-    for(typename MeshT::VertexIter vit = mesh.vertices_begin();
-        vit != mesh.vertices_end(); ++vit, k++){
-      typename MeshT::Point p = mesh.point(*vit);
-      double r, g, b;
-      map_prop_to_color(properties[k], r, g, b);
-      // note that the obj format supports vertex colors as three float values appended to the vertex coordinates
-      ostr << "v " << p[0] << ' ' << p[1] << ' ' << p[2] << ' ' << r << ' ' << g << ' ' << b << std::endl;
-      typename MeshT::Point n = mesh.normal(*vit);
-      ostr << "vn " << n[0] << ' ' << n[1] << ' ' << n[2] << std::endl;
-    }
-    mesh.release_vertex_normals();
-    for (typename MeshT::FaceIter fit = mesh.faces_begin();
-         fit!=mesh.faces_end(); ++fit){
-        ostr << "f ";
-        for (typename MeshT::FaceVertexIter fv_it = mesh.fv_iter(*fit); fv_it.is_valid(); ++fv_it){
-          OpenMesh::VertexHandle vh = *fv_it;
-          unsigned int id = vh.idx()+1; // in obj format, vertex numbering for faces starts at 1
-          ostr << id << ' ';
-        }
-        ostr << std::endl;
-      }
-    ostr.close();
-    return true;
-  }
-
-  static void map_label_to_color(size_t label, double& r, double& g, double& b){
-    if(label>=vkm_vrml_color::heatmap_custom_size)
-      label = vkm_vrml_color::heatmap_custom_size - 1;
-    r = static_cast<double>(vkm_vrml_color::heatmap_custom[label][0])/255.0;
-    g = static_cast<double>(vkm_vrml_color::heatmap_custom[label][1])/255.0;
-    b = static_cast<double>(vkm_vrml_color::heatmap_custom[label][2])/255.0;
-  }
-
-  template< typename MeshT >
-  static bool write_obj_file_vertex_label_as_color(std::string const& obj_path , MeshT& mesh, std::string const& prop_name){
-    std::ofstream ostr(obj_path.c_str());
-    if(!ostr){
-      std::cout << "Failed to open " << obj_path << " for writing obj file" << std::endl;
-      return false;
-    }
-    OpenMesh::VPropHandleT< size_t > prop;
-    bool prop_valid = mesh.get_property_handle(prop, prop_name);
-    if(!prop_valid){
-      std::cout << "Property " << prop_name << " not valid on mesh" << std::endl;
-      return false;
-    }
-    std::set<size_t> unique_labels;
-    for(typename MeshT::VertexIter vit = mesh.vertices_begin();
-    vit != mesh.vertices_end(); ++vit){
-      size_t label = mesh.property(prop, *vit);
-      unique_labels.insert(label);
-    }
-    std::map<size_t, size_t> label_map;
-    for(std::set<size_t>::iterator sit = unique_labels.begin();
-        sit != unique_labels.end(); ++sit)
-      label_map[*sit]= (2860486313*(*sit))%vkm_vrml_color::heatmap_custom_size;
-    // write out the vertices
-    for(typename MeshT::VertexIter vit = mesh.vertices_begin();
-        vit != mesh.vertices_end(); ++vit){
-      typename MeshT::Point p = mesh.point(*vit);
-      size_t label = mesh.property(prop, *vit);
-      size_t mapped_label = label_map[label];
-      double r, g, b;
-      map_label_to_color(mapped_label, r, g, b);
-      // note that the obj format supports vertex colors as three float values appended to the vertex coordinates
-      ostr << "v " << p[0] << ' ' << p[1] << ' ' << p[2] << ' ' << r << ' ' << g << ' ' << b << std::endl;
-    }
-    for (typename MeshT::FaceIter fit = mesh.faces_begin();
-         fit!=mesh.faces_end(); ++fit){
-      ostr << "f ";
-      for (typename MeshT::FaceVertexIter fv_it = mesh.fv_iter(*fit); fv_it.is_valid(); ++fv_it){
-        OpenMesh::VertexHandle vh = *fv_it;
-        unsigned int id = vh.idx()+1; // in obj format, vertex numbering for faces starts at 1
-        ostr << id << ' ';
-      }
-      ostr << std::endl;
-    }
-    ostr.close();
     return true;
   }
 

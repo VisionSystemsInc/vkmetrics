@@ -14,7 +14,6 @@ set(VKM_SOURCES
   vkm_histogram.h
   vkm_containment_tree.h  vkm_containment_tree.cxx
   vkm_binary_regions.h  vkm_binary_regions.cxx
-  vkm_vrml_color.h  vkm_vrml_color.cxx
   vkm_obj_io.h
   vkm_ground_truth.h  vkm_ground_truth.cxx
   vkm_metrics.h  vkm_metrics.cxx
