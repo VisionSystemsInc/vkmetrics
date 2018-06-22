@@ -155,8 +155,6 @@ public:
       std::getline(iss_group,prop);
       while (!prop.empty() && prop[0]==' ') {prop.erase(0,1);}
 
-      std::cout << "Group ID: " << id << std::endl;
-
       // parse major/minor indices
       iss_id.str(id);
       std::getline(iss_id,smajor,'_');

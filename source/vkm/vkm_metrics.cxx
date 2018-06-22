@@ -1,6 +1,7 @@
 #include <sstream>
 #include <assert.h>
 #include <fstream>
+#include <iomanip>
 
 // VXL ------------------------------------
 #include <vgl/algo/vgl_fit_plane_3d.h>
@@ -154,17 +155,27 @@ double xy_region::z_off(
 
 
 // encode json string for score instance
+void score_json_helper(std::stringstream &ss, std::string name, double val) {
+  ss << "\"" << name << "\": ";
+  if (std::isfinite(val))
+    ss << val;
+  else
+    ss << "null";
+}
+
 std::string score::json() const
 {
   std::stringstream ss;
-  ss << "{ " << "\"gt_region_id\" :" << gt_region_id_ << ','
-     << "\"test_region_id\" :" << test_region_id_ << ','
-     << "\"area\" :" << area_ << ','
-     << "\"comp\" :" << comp_ << ','
-     << "\"corr\" :" << corr_ << ','
-     << "\"iou\" :" << iou_ << ','
-     << "\"normal_ang_diff\" :" << normal_ang_diff_ << ','
-     << "\"z_error\" :" << z_error_ << " }" << std::endl;
+  ss << "{ ";
+  ss << "\"gt_region_id\": " << gt_region_id_ << ", ";
+  ss << "\"test_region_id\": " << test_region_id_ << ", ";
+  score_json_helper(ss,"area",area_); ss << ", ";
+  score_json_helper(ss,"comp",comp_); ss << ", ";
+  score_json_helper(ss,"corr",corr_); ss << ", ";
+  score_json_helper(ss,"iou",iou_); ss << ", ";
+  score_json_helper(ss,"normal_ang_diff",normal_ang_diff_); ss << ", ";
+  score_json_helper(ss,"z_error",z_error_);
+  ss << " }";
   return ss.str();
 }
 
@@ -313,11 +324,38 @@ void vkm_metrics::compute_best_match_2d_score_stats()
 
 void vkm_metrics::print_score_array()
 {
-  std::cout << "gt indx   test_indx  area         comp   corr      iou     ang_er   z_er" << std::endl;
+  size_t width = 12;
+  std::ostringstream oss;
+
+  oss << std::setw(width) << "gt_indx"
+      << std::setw(width) << "test_indx"
+      << std::setw(width) << "area"
+      << std::setw(width) << "comp"
+      << std::setw(width) << "corr"
+      << std::setw(width) << "iou"
+      << std::setw(width) << "ang_er"
+      << std::setw(width) << "z_error"
+      ;
+  std::cout << oss.str() << std::endl;
+
   for(std::map<size_t, std::pair<size_t, score > >::iterator sit = max_scores_.begin();
       sit != max_scores_.end(); ++sit){
     const score& s = sit->second.second;
-    std::cout << s.gt_region_id_ << "          " << s.test_region_id_ << "       " << s.area_ << ' ' << s.comp_ << ' ' << s.corr_ << ' ' << s.iou_ << ' ' << s.normal_ang_diff_ << ' ' << s.z_error_ << std::endl;
+
+    oss.str(""); oss.clear();
+
+    oss << std::fixed;
+    oss << std::setw(width) << s.gt_region_id_;
+    oss << std::setw(width) << s.test_region_id_;
+    oss << std::setprecision(3);
+    oss << std::setw(width) << std::fixed << s.area_;
+    oss << std::setprecision(6);
+    oss << std::setw(width) << s.comp_;
+    oss << std::setw(width) << s.corr_;
+    oss << std::setw(width) << s.iou_;
+    oss << std::setw(width) << s.normal_ang_diff_;
+    oss << std::setw(width) << s.z_error_;
+    std::cout << oss.str() << std::endl;
   }
 }
 
@@ -355,6 +393,7 @@ void vkm_metrics::find_z_offset()
     std::cout << "z offset failed " <<  std::endl;
     return;
   }
+  std::cout << "debugging: z-off/iou_sum " << z_off_ << "/" << iou_sum << std::endl;
   z_off_ = z_off_/iou_sum;
   std::cout << "z offset " << z_off_ << " meters" << std::endl;
   // transform regions. assume  x-y trans already known.
@@ -441,15 +480,16 @@ void vkm_metrics::compute_best_match_3d_score_stats()
 std::string vkm_metrics::json() const
 {
   std::stringstream ss;
-  ss << "[ ";
+  ss << "[" << std::endl;
   size_t n = max_scores_.size();
   size_t i = 0;
   for(std::map<size_t, std::pair<size_t, score > >::const_iterator sit = max_scores_.begin();
       sit != max_scores_.end(); ++sit, ++i)
-    if(i<(n-1))
-      ss << sit->second.second.json() << ", ";
-    else
-      ss << sit->second.second.json();
-  ss << " ]" << std::endl;
+  {
+    ss << sit->second.second.json();
+    if(i<(n-1)) {ss << ", ";}
+    ss << std::endl;
+  }
+  ss << std::endl << "]" << std::endl;
   return ss.str();
 }

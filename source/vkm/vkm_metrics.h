@@ -70,6 +70,7 @@ struct xy_region{
   vgl_plane_3d<double> plane_;
 };
 
+
 //: manage the metric values (scores) for matching test and ground truth regions
 struct score{
   score():gt_region_id_(0), test_region_id_(0) , area_(0.0), comp_(0.0), corr_(0.0), iou_(0.0), normal_ang_diff_(0.0), z_error_(0.0){}
@@ -85,10 +86,12 @@ struct score{
   double normal_ang_diff_;  // angle between gt plane normal and test plane normal
   double z_error_;          // signed elevation difference at the centroid of the region intersection
 };
+
 // various operators for maintaining scores
 score operator +(score const& sa, score const& sb);
 score operator /=(score& a, double v);
 std::ostream& operator<<(std::ostream& str, score const& s);
+
 
 // parameters required in computing metrics
 struct metrics_params{
