@@ -24,7 +24,10 @@
 
 #define test_region_indx 4
 
-bool fit_plane_3d_by_type::fit(std::string surface_type, vgl_plane_3d<double>& plane){
+
+bool fit_plane_3d_by_type::fit(
+    std::string surface_type, vgl_plane_3d<double>& plane)
+{
   if(surface_type == "Flat")
     return fit_flat(plane);
   else if(surface_type == "Sloped")
@@ -33,7 +36,9 @@ bool fit_plane_3d_by_type::fit(std::string surface_type, vgl_plane_3d<double>& p
   return false;
 }
 
-bool fit_plane_3d_by_type::fit_flat(vgl_plane_3d<double>& plane){
+
+bool fit_plane_3d_by_type::fit_flat(vgl_plane_3d<double>& plane)
+{
   // find range of elevations
   size_t n = pts_.size();
   if (n == 0) {
@@ -76,7 +81,9 @@ bool fit_plane_3d_by_type::fit_flat(vgl_plane_3d<double>& plane){
   return false;
 }
 
-bool fit_plane_3d_by_type::fit_sloped(vgl_plane_3d<double>& plane){
+
+bool fit_plane_3d_by_type::fit_sloped(vgl_plane_3d<double>& plane)
+{
   size_t n = pts_.size();
   if (n == 0) {
 	  std::cout << "no points to fit plane" << std::endl;
@@ -128,7 +135,9 @@ bool fit_plane_3d_by_type::fit_sloped(vgl_plane_3d<double>& plane){
   return true;
 }
 
-bool fit_plane_3d_by_type::fit_sloped2(vgl_plane_3d<double>& plane){
+
+bool fit_plane_3d_by_type::fit_sloped2(vgl_plane_3d<double>& plane)
+{
   size_t n = pts_.size();
   if (n <3 ) {
     std::cout << "insufficient points to fit plane" << std::endl;
@@ -180,7 +189,9 @@ bool fit_plane_3d_by_type::fit_sloped2(vgl_plane_3d<double>& plane){
   return true;
 }
 
-bool vkm_ground_truth::load_ground_truth_img_regions(std::string const& path){
+
+bool vkm_ground_truth::load_ground_truth_img_regions(std::string const& path)
+{
   std::ifstream istr(path.c_str());
   if(!istr){
     std::cout << "Can't open " << path << " to read ground truth regions" << std::endl;
@@ -212,8 +223,10 @@ bool vkm_ground_truth::load_ground_truth_img_regions(std::string const& path){
   return true;
 }
 
+
 // find close vertex pairs and replace with average
-void vkm_ground_truth::snap_image_region_vertices(double tol){
+void vkm_ground_truth::snap_image_region_vertices(double tol)
+{
   for(std::map<size_t, std::pair<vgl_polygon<double>, vgl_box_2d<double> >  >::iterator riti = img_regions_.begin();
       riti != img_regions_.end();++ riti){
     size_t indx_i = riti->first;
@@ -242,23 +255,9 @@ void vkm_ground_truth::snap_image_region_vertices(double tol){
   }
 }
 
-bool vkm_ground_truth::load_ground_truth_pc_regions(std::string const& path){
-  std::ifstream istr(path.c_str());
-  if(!istr){
-    std::cout << "Can't open " << path << " to read ground truth point cloud regions" << std::endl;
-    return false;
-  }
-  double x=0.0, y=0.0, dindx=0.0;
-  while(istr >> x >> y >> dindx){
-    size_t indx = static_cast<size_t>(dindx);
-    vgl_point_2d<double> vert(x, y);
-    pc_regions_[indx].push_back(vert);
-    istr >> std::ws;
-  }
-  return true;
-}
 
-vkm_ground_truth::surface_t vkm_ground_truth::string_to_type(std::string const& stype){
+vkm_ground_truth::surface_t vkm_ground_truth::string_to_type(std::string const& stype)
+{
   std::map<std::string, surface_t> type_map;
   type_map["Flat"]   = FLAT;
   type_map["Sloped"] = SLOPED;
@@ -268,7 +267,9 @@ vkm_ground_truth::surface_t vkm_ground_truth::string_to_type(std::string const& 
   return type_map[stype];
 }
 
-std::string vkm_ground_truth::type_to_string(vkm_ground_truth::surface_t stype){
+
+std::string vkm_ground_truth::type_to_string(vkm_ground_truth::surface_t stype)
+{
   switch(stype){
   case FLAT:
     return "Flat";
@@ -286,7 +287,9 @@ std::string vkm_ground_truth::type_to_string(vkm_ground_truth::surface_t stype){
   }
 }
 
-bool vkm_ground_truth::load_surface_types(std::string const& path){
+
+bool vkm_ground_truth::load_surface_types(std::string const& path)
+{
   std::ifstream istr(path.c_str());
   if(!istr){
     std::cout << "Can't open " << path << " to read ground truth surface types" << std::endl;
@@ -301,7 +304,28 @@ bool vkm_ground_truth::load_surface_types(std::string const& path){
   return true;
 }
 
-bool vkm_ground_truth::compute_img_to_xy_trans(){
+
+bool vkm_ground_truth::compute_img_to_xy_trans(std::string const& path)
+{
+  //: region vertex positions in LVCS coordinates
+  std::map<size_t, std::vector<vgl_point_2d<double > > > pc_regions;
+
+  // locate file
+  std::ifstream istr(path.c_str());
+  if(!istr){
+    std::cout << "Can't open " << path << " to read ground truth point cloud regions" << std::endl;
+    return false;
+  }
+
+  // read file
+  double x=0.0, y=0.0, dindx=0.0;
+  while(istr >> x >> y >> dindx){
+    size_t indx = static_cast<size_t>(dindx);
+    vgl_point_2d<double> vert(x, y);
+    pc_regions[indx].push_back(vert);
+    istr >> std::ws;
+  }
+
   // get corresponding points
   std::vector<vgl_homg_point_2d<double> >img_pts;
   std::vector<vgl_homg_point_2d<double> > xy_pts;
@@ -309,7 +333,7 @@ bool vkm_ground_truth::compute_img_to_xy_trans(){
        rit != img_regions_.end(); ++rit) {
     size_t indx = rit->first;
     const std::vector<vgl_point_2d<double> >& iverts = (rit->second.first)[0];
-    const std::vector<vgl_point_2d<double> >& xyverts = pc_regions_[indx];
+    const std::vector<vgl_point_2d<double> >& xyverts = pc_regions[indx];
     size_t ni = iverts.size(), nxy = xyverts.size();
     if(ni == 0 || nxy == 0){
       std::cout << "no points available - fatal" << std::endl;
@@ -324,16 +348,29 @@ bool vkm_ground_truth::compute_img_to_xy_trans(){
       xy_pts.push_back(vgl_homg_point_2d<double>(xyverts[i]));
     }
   }
+
+  // compute homography
   vgl_h_matrix_2d_compute_linear h_comp;
   if(!h_comp.compute(img_pts, xy_pts, H_)){
     std::cout << " compute homography failed - fatal" << std::endl;
     return false;
   }
-  std::cout << "Homography \n" << H_ << std::endl;
+
+  // report
+  std::cout << "Computed homography \n" << H_ << std::endl;
   return true;
 }
 
-bool vkm_ground_truth::load_dem_image(std::string const& path){
+
+void vkm_ground_truth::set_img_to_xy_trans(vnl_matrix_fixed<double,3,3> const& M)
+{
+  H_.set(M);
+  std::cout << "Manual homography \n" << H_ << std::endl;
+}
+
+
+bool vkm_ground_truth::load_dem_image(std::string const& path)
+{
   dem_ = vil_load(path.c_str());
   if(dem_.ni()==0){
     std::cout << "load dem failed for path " << path << std::endl;
@@ -342,7 +379,9 @@ bool vkm_ground_truth::load_dem_image(std::string const& path){
   return true;
 }
 
-vgl_point_3d<double> vkm_ground_truth::dem_to_world(unsigned u_dem, unsigned v_dem) const{
+
+vgl_point_3d<double> vkm_ground_truth::dem_to_world(unsigned u_dem, unsigned v_dem) const
+{
   double z = dem_(u_dem, v_dem)-z_off_;
   // transform to x-y
   double du = static_cast<double>(u_dem), dv = static_cast<double>(v_dem);
@@ -352,7 +391,9 @@ vgl_point_3d<double> vkm_ground_truth::dem_to_world(unsigned u_dem, unsigned v_d
   return vgl_point_3d<double>(xy_pt.x(), xy_pt.y(), z);
 }
 
-void vkm_ground_truth::fit_region_planes(){
+
+void vkm_ground_truth::fit_region_planes()
+{
   //size_t debug_indx = 110;
   for (std::map<size_t, mc_region_2d >::const_iterator mit = cont_tree_.mc_regions().begin();
        mit != cont_tree_.mc_regions().end(); ++mit) {
@@ -386,7 +427,12 @@ void vkm_ground_truth::fit_region_planes(){
     region_planes_[indx]= pl;
   }
 }
-static bool proj_vertical(vgl_point_3d<double> const& p, vgl_plane_3d<double> const& plane, vgl_point_3d<double>& proj_pt){
+
+
+static bool proj_vertical(
+    vgl_point_3d<double> const& p, vgl_plane_3d<double> const& plane,
+    vgl_point_3d<double>& proj_pt)
+{
   if(fabs(plane.c())<0.1){
     std::cout << "nearly vertical plane - can't project point vertically" << std::endl;
     return false;
@@ -396,7 +442,13 @@ static bool proj_vertical(vgl_point_3d<double> const& p, vgl_plane_3d<double> co
   return true;
 }
 
-static bool matched(vgl_line_segment_2d<double> const& seg, std::vector<vgl_line_segment_2d<double> > const& segs, std::vector<std::pair<size_t, size_t> > const& edge_prs, std::pair<size_t, size_t>& segs_match, double tol){
+
+static bool matched(
+    vgl_line_segment_2d<double> const& seg,
+    std::vector<vgl_line_segment_2d<double> > const& segs,
+    std::vector<std::pair<size_t, size_t> > const& edge_prs,
+    std::pair<size_t, size_t>& segs_match, double tol)
+{
   double ang_tol = 0.01; //tol in radians
    size_t n = segs.size();
   if(n == 0)
@@ -428,10 +480,13 @@ static bool matched(vgl_line_segment_2d<double> const& seg, std::vector<vgl_line
   return false;
 }
 
-static bool repair_topology_caseI(mc_region_2d& mcr_2d,
-                                  std::vector<std::pair<size_t, size_t> > const& matched_edges,
-                                  vgl_line_segment_2d<double> const& unmatched_seg,
-                                  size_t hole_index, double tol) {
+
+static bool repair_topology_caseI(
+    mc_region_2d& mcr_2d,
+    std::vector<std::pair<size_t, size_t> > const& matched_edges,
+    vgl_line_segment_2d<double> const& unmatched_seg,
+    size_t hole_index, double tol)
+{
   size_t n = matched_edges.size();
   if (n == 0) {
     std::cout << "shouldn't happen - no matched edges" << std::endl;
@@ -734,7 +789,10 @@ static bool repair_topology_caseI(mc_region_2d& mcr_2d,
   return true;
 }
 
-bool vkm_ground_truth::ensure_consistent_topology(size_t outer_index, mc_region_2d& mcr_2d) {
+
+bool vkm_ground_truth::ensure_consistent_topology(
+    size_t outer_index, mc_region_2d& mcr_2d)
+{
   //
   // It is anticipated that a number of annotation issues will be repaired by this function
   //
@@ -805,8 +863,9 @@ bool vkm_ground_truth::ensure_consistent_topology(size_t outer_index, mc_region_
   return true;
 }
 
-void vkm_ground_truth::construct_polygon_soup(){
 
+void vkm_ground_truth::construct_polygon_soup()
+{
   for(std::map<size_t, vgl_plane_3d<double> >::iterator rit = region_planes_.begin();
       rit != region_planes_.end(); ++rit){
     size_t indx = rit->first;
@@ -853,7 +912,9 @@ void vkm_ground_truth::construct_polygon_soup(){
   }
 }
 
-void vkm_ground_truth::convert_to_meshes(){
+
+void vkm_ground_truth::convert_to_meshes()
+{
   for(std::map<size_t, mc_region_3d >::iterator rit = regions_3d_.begin();
       rit != regions_3d_.end(); ++rit){
     size_t index = rit->first;
@@ -892,7 +953,10 @@ void vkm_ground_truth::convert_to_meshes(){
   }
 }
 
-bool vkm_ground_truth::region_contained(mc_region_3d const& reg, vgl_polygon<double> const& perim){
+
+bool vkm_ground_truth::region_contained(
+    mc_region_3d const& reg, vgl_polygon<double> const& perim)
+{
   mc_region_2d mcr_2d = reg.xy_region();
   const std::vector<vgl_point_2d<double> >& verts = mcr_2d.outer_cycle_;
   bool inside = true;
@@ -902,8 +966,11 @@ bool vkm_ground_truth::region_contained(mc_region_3d const& reg, vgl_polygon<dou
   return inside;
 }
 
+
 // map 3d regions onto x-y plane
-bool vkm_ground_truth::write_xy_polys(std::string const& site_name, std::string const& path){
+bool vkm_ground_truth::write_xy_polys(
+    std::string const& site_name, std::string const& path)
+{
   const vgl_polygon<double>& perim = perimeters_[site_name];
   if(perim.num_sheets() == 0){
     std::cout << "no perimeter defined for " << site_name << std::endl;
@@ -937,125 +1004,125 @@ bool vkm_ground_truth::write_xy_polys(std::string const& site_name, std::string 
     return true;
 }
 
-bool vkm_ground_truth::write_processed_ground_truth(std::string const& path){
-  //  std::map<size_t, std::map<size_t, PolyMesh> > region_meshes_;
-  std::ofstream ostr(path.c_str());
-    if(!ostr){
-      std::cout << "Failed to open " << path << " for writing obj file" << std::endl;
-      return false;
+
+bool vkm_ground_truth::write_processed_ground_truth(std::string const& path)
+{
+  // TODO - write holes, deal with intersection over union and holes
+  // for now, only write 1st minor mesh (parent object)
+
+  // flatten structure (map of MeshT pointers)
+  std::stringstream ss;
+  std::map<std::string, const PolyMesh*> groups;
+  for (const auto& major : region_meshes_ ) {
+    for (const auto& minor : major.second ) {
+      ss.str("");
+      ss << major.first << "_" << minor.first << " "
+         << type_to_string(surface_types_[major.first]);
+      groups[ss.str()] = &(minor.second);
+      break;
     }
-    size_t voff = 1;
-    for(std::map<size_t, std::map<size_t, PolyMesh > >::iterator rit = region_meshes_.begin();
-        rit != region_meshes_.end(); ++rit){
-      size_t gid = rit->first;
-      std::map<size_t, PolyMesh>& meshes = rit->second;
-      //for now don't write out holes - FIXME! - need to deal with intersection over union and holes
-      std::map<size_t, PolyMesh>::iterator mit = meshes.begin();
-       size_t n_verts = 0;
-        std::stringstream ss;
-        ss << "g " << gid << '_' << mit->first << ' ' << type_to_string(surface_types_[gid]);
-        ostr <<  ss.str() << std::endl;
-       PolyMesh pmesh = mit->second;
-       for(PolyMesh::ConstVertexIter vit = pmesh.vertices_begin();
-           vit != pmesh.vertices_end(); ++vit){
-         PolyMesh::Point p = pmesh.point(*vit);
-         ostr << "v " << p[0] << ' ' << p[1] << ' ' << p[2] << std::endl;
-         n_verts++;
-       }
-       for ( PolyMesh::ConstFaceIter fit = pmesh.faces_begin();
-             fit!=pmesh.faces_end(); ++fit){
-          ostr << "f ";
-          for ( PolyMesh::ConstFaceVertexIter fv_it = pmesh.fv_iter(*fit); fv_it.is_valid(); ++fv_it){
-            OpenMesh::VertexHandle vh = *fv_it;
-          unsigned int id = vh.idx();
-          id += voff;
-          ostr << id << ' ';
-          }
-          ostr << std::endl;
-       }
-        voff += n_verts;
-    }
-    ostr.close();
-    return true;
+  }
+
+  // write via private function
+  return vkm_obj_io::write_group_pointer_obj_file(path,groups);
 }
 
-bool vkm_ground_truth::load_processed_ground_truth(std::string const& path, std::map<size_t, std::map<size_t, PolyMesh> >& region_meshes,
-                                                       std::map<size_t, surface_t>& surface_types){
-  std::ifstream istr(path.c_str());
-    if(!istr){
-      std::cout << "Failed to open " << path << " for reading obj file" << std::endl;
-      return false;
-    }
-    std::string gs, gids, str;
-    size_t start_id = 1;
-    size_t cum_id = 1;
-    std::string surface_type_str;
-    std::map<size_t, size_t> vmap;
-    std::map<size_t, PolyMesh>  cur_mesh_group;
-    while (istr >> gs >> gids >> surface_type_str) {
-      if (gs != "g") {
-        std::cout << "Parse failed " << gs << ' ' << gids << std::endl;
-        return false;
-      }
-      std::string majs, mins;
-      size_t outer_id = 0, hole_id =0;
-      bool reading_major = true;
-      for (std::string::iterator sit = gids.begin();
-           sit != gids.end(); ++sit) {
-        if (reading_major&& *sit != '_') {
-          majs.push_back(*sit);
-          continue;
-        }
-        else if (*sit == '_') {
-          reading_major = false;
-          continue;
-        }
-        else if (reading_major == false) {
-          mins.push_back(*sit);
-        }
-      }
-      std::stringstream maj_ss(majs), min_ss(mins);
-      maj_ss >> outer_id;
-      min_ss >> hole_id;
-      surface_types[outer_id] = string_to_type(surface_type_str);
-      PolyMesh mesh;
-      // read the mesh vertices
-      std::vector< PolyMesh::VertexHandle> in_vhandles;
-      std::string type;
-      while(true){
-        double x, y, z;
-        istr >> type;
-        if(type != "v"){
-          break;
-        }
-        istr >> x >> y >> z;
-        PolyMesh::Point p(x, y, z);
-        in_vhandles.push_back(mesh.add_vertex(p));
-        cum_id++;
-      }//end while(true)
 
-      // read the face
-      if(type != "f"){
-        std::cout << "Parse failed " << type << std::endl;
-        return false;
-      }
-      std::vector< PolyMesh::VertexHandle> vhandles;
-      size_t k = 0;
-      for(size_t i = start_id; i<cum_id ; ++i, ++k){
-        size_t vh;
-        istr >> vh;
-        vhandles.push_back(in_vhandles[k]);
-      }
-      start_id = cum_id;
-      mesh.add_face(vhandles);
-      // end of face read
-      region_meshes[outer_id][hole_id] = mesh;
-    } // end of file
+bool vkm_ground_truth::load_processed_ground_truth(
+    std::string const& path,
+    std::map<size_t, std::map<size_t, PolyMesh> >& region_meshes,
+    std::map<size_t, surface_t>& surface_types)
+{
+  // get region meshes
+  std::map<size_t, std::map<size_t, std::string> > properties;
+  if (!vkm_obj_io::read_composite_obj_file(path,region_meshes,properties))
+    return false;
 
-    return true;
+  // custom parse surface-type property
+  for (const auto& p1 : properties)
+    for (const auto& p2 : p1.second)
+      surface_types[p1.first] = string_to_type(p2.second);
+
+  return true;
+
+
+  // std::ifstream istr(path.c_str());
+  // if(!istr){
+  //   std::cout << "Failed to open " << path << " for reading obj file" << std::endl;
+  //   return false;
+  // }
+  // std::string gs, gids, str;
+  // size_t start_id = 1;
+  // size_t cum_id = 1;
+  // std::string surface_type_str;
+  // std::map<size_t, size_t> vmap;
+  // std::map<size_t, PolyMesh>  cur_mesh_group;
+  // while (istr >> gs >> gids >> surface_type_str) {
+  //   if (gs != "g") {
+  //     std::cout << "Parse failed " << gs << ' ' << gids << std::endl;
+  //     return false;
+  //   }
+  //   std::string majs, mins;
+  //   size_t outer_id = 0, hole_id =0;
+  //   bool reading_major = true;
+  //   for (std::string::iterator sit = gids.begin();
+  //        sit != gids.end(); ++sit) {
+  //     if (reading_major&& *sit != '_') {
+  //       majs.push_back(*sit);
+  //       continue;
+  //     }
+  //     else if (*sit == '_') {
+  //       reading_major = false;
+  //       continue;
+  //     }
+  //     else if (reading_major == false) {
+  //       mins.push_back(*sit);
+  //     }
+  //   }
+  //   std::stringstream maj_ss(majs), min_ss(mins);
+  //   maj_ss >> outer_id;
+  //   min_ss >> hole_id;
+  //   surface_types[outer_id] = string_to_type(surface_type_str);
+  //   PolyMesh mesh;
+  //   // read the mesh vertices
+  //   std::vector< PolyMesh::VertexHandle> in_vhandles;
+  //   std::string type;
+  //   while(true){
+  //     double x, y, z;
+  //     istr >> type;
+  //     if(type != "v"){
+  //       break;
+  //     }
+  //     istr >> x >> y >> z;
+  //     PolyMesh::Point p(x, y, z);
+  //     in_vhandles.push_back(mesh.add_vertex(p));
+  //     cum_id++;
+  //   }//end while(true)
+
+  //   // read the face
+  //   if(type != "f"){
+  //     std::cout << "Parse failed " << type << std::endl;
+  //     return false;
+  //   }
+  //   std::vector< PolyMesh::VertexHandle> vhandles;
+  //   size_t k = 0;
+  //   for(size_t i = start_id; i<cum_id ; ++i, ++k){
+  //     size_t vh;
+  //     istr >> vh;
+  //     vhandles.push_back(in_vhandles[k]);
+  //   }
+  //   start_id = cum_id;
+  //   mesh.add_face(vhandles);
+  //   // end of face read
+  //   region_meshes[outer_id][hole_id] = mesh;
+  // } // end of file
+
+  // return true;
 }
 
-void vkm_ground_truth::convert_img_regions_to_meshes(){
+
+void vkm_ground_truth::convert_img_regions_to_meshes()
+{
   for(std::map<size_t, std::pair<vgl_polygon<double>, vgl_box_2d<double> >  >::iterator rit = img_regions_.begin();
       rit != img_regions_.end(); ++rit){
     size_t index = rit->first;
@@ -1076,7 +1143,9 @@ void vkm_ground_truth::convert_img_regions_to_meshes(){
   }
 }
 
-bool vkm_ground_truth::load_site_perimeter(std::string const& site_name, std::string const& bwm_ptset_path){
+
+bool vkm_ground_truth::load_site_perimeter(std::string const& site_name, std::string const& bwm_ptset_path)
+{
   // currently defined by a bwm pointset ascii file in dem image coordinates - replace later with Kitware format
   std::ifstream istr(bwm_ptset_path.c_str());
   if(!istr){
@@ -1106,7 +1175,11 @@ bool vkm_ground_truth::load_site_perimeter(std::string const& site_name, std::st
   return true;
 }
 
-vkm_ground_truth::PolyMesh::FaceHandle vkm_ground_truth::extrude_base_pts(const std::vector<vgl_point_3d<double> >& base_points, vgl_plane_3d<double> ground_plane, PolyMesh& mesh){
+
+vkm_ground_truth::PolyMesh::FaceHandle vkm_ground_truth::extrude_base_pts(
+    const std::vector<vgl_point_3d<double> >& base_points,
+    vgl_plane_3d<double> ground_plane, PolyMesh& mesh)
+{
   size_t npts = base_points.size();
   std::vector<PolyMesh::Point> base_ompts, end_ompts;
   for(size_t i = 0; i<npts; ++i){
@@ -1156,7 +1229,9 @@ vkm_ground_truth::PolyMesh::FaceHandle vkm_ground_truth::extrude_base_pts(const 
   return fh;
 }
 
-bool vkm_ground_truth::construct_extruded_gt_model(std::string const& name){
+
+bool vkm_ground_truth::construct_extruded_gt_model(std::string const& name)
+{
   const vgl_polygon<double>& perim = perimeters_[name];
   if(perim.num_sheets() == 0){
     std::cout << "no perimeter defined for site " << name << std::endl;
@@ -1203,7 +1278,9 @@ bool vkm_ground_truth::construct_extruded_gt_model(std::string const& name){
   return true;
 }
 
-bool vkm_ground_truth::write_extruded_gt_model(std::string const& name, std::string const& path){
+
+bool vkm_ground_truth::write_extruded_gt_model(std::string const& name, std::string const& path)
+{
   std::map<std::string, std::map<size_t, PolyMesh> >::iterator mit = extruded_regions_.find(name);
   if(mit == extruded_regions_.end()){
     std::cout << "site name " << name << " doesn't exist - can't write " << std::endl;
@@ -1215,7 +1292,9 @@ bool vkm_ground_truth::write_extruded_gt_model(std::string const& name, std::str
   return true;
 }
 
-bool vkm_ground_truth::write_ground_planes(std::string const& gnd_plane_path) const{
+
+bool vkm_ground_truth::write_ground_planes(std::string const& gnd_plane_path) const
+{
   std::ofstream ostr(gnd_plane_path.c_str());
   if(!ostr){
     std::cout << "can't open " << gnd_plane_path << " to save site ground planes" << std::endl;

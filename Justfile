@@ -39,13 +39,19 @@ function caseify()
       extra_args+=$#
       ;;
 
+    ### Bash tasks (complex bash scripts that run within the Just environment)
     truth) #Run ground truth routine
-      (source "${VKM_CWD}/scripts/task.bsh" truth "${@}")
+      (justify _source "${VKM_CWD}/scripts/task.bsh" truth "${@}")
+      extra_args+=$#
+      ;;
+    metrics) #Run metrics routine
+      (justify _source "${VKM_CWD}/scripts/task.bsh" metrics "${@}")
       extra_args+=$#
       ;;
 
-    metrics) #Run metrics routine
-      (source "${VKM_CWD}/scripts/task.bsh" metrics "${@}")
+    # Execute (via source) arbitrary script in Just environment
+    _source)
+      (source ${@+"${@}"})
       extra_args+=$#
       ;;
 

@@ -7,11 +7,11 @@ set -euE
 RUNTIME_SCRIPT="${BASH_SOURCE[0]}"
 
 # directories/files inside docker
-RUNTIME_SCRIPT_DOCKER=${RUNTIME_SCRIPT_DOCKER-"//vsi/script.bsh"}
-PYTHON_DIR_DOCKER=${PYTHON_DIR_DOCKER-"/vsi/python"}
+RUNTIME_SCRIPT_DOCKER=${RUNTIME_SCRIPT_DOCKER-"//core3d/script.bsh"}
 
-INPUT_DIR_DOCKER=${INPUT_DIR_DOCKER-"/vsi/input"}
-OUTPUT_DIR_DOCKER=${OUTPUT_DIR_DOCKER-"/vsi/output"}
+TRUTH_DIR_DOCKER=${TRUTH_DIR_DOCKER-"/core3d/truth"}
+INPUT_DIR_DOCKER=${INPUT_DIR_DOCKER-"/core3d/input"}
+OUTPUT_DIR_DOCKER=${OUTPUT_DIR_DOCKER-"/core3d/output"}
 
 
 # metrics main argument
@@ -30,11 +30,13 @@ case ${task_arg} in
 
     # subshell for logging
     (
-      echo "INPUT_DIR  = ${INPUT_DIR}"
+      echo "TRUTH_DIR  = ${TRUTH_DIR}"
       echo "OUTPUT_DIR = ${OUTPUT_DIR}"
 
       # run code
       VKM_VKM_VOLUMES+=( "${RUNTIME_VOLUMES[@]}" )
+      echo "${RUNTIME_VOLUMES[@]}"
+
       justify run pipenv run "${RUNTIME_SCRIPT_DOCKER}" truth-run ${ARGS}
 
     ) 2>&1 | tee -a "${LOG_FILE}"
@@ -59,16 +61,18 @@ case ${task_arg} in
             "USAGE: just truth [OPTIONS]"
             ""
             "OPTIONS"
-            "  -i, --input [PATH]        Input folder"
-            "  -o, --output [PATH]       Output folder"
-            "  --no-output-stamp         Do not create unique date-stamped output folder"
+            "  -g, --groundtruth [PATH]  Ground truth directory"
+            "  -o, --output [PATH]       Output directory"
+            "  --no-output-stamp         Do not create unique date-stamped output subdirectory"
+            ""
+            "  additional options are passed to ./source/engine/truth.py"
             ""
           )
           printf '%s\n' "${USAGE[@]}"
           exit
           ;;
-        -i|--input)
-            INPUT_DIR=$2 ; shift 2 ;;
+        -g|--groundtruth)
+            TRUTH_DIR=$2 ; shift 2 ;;
         -o|--output)
             OUTPUT_DIR=$2 ; shift 2 ;;
         --no-output-stamp)
@@ -79,25 +83,20 @@ case ${task_arg} in
     done
 
     # check options
-    if [ ! -v INPUT_DIR ]; then
-      echo "INPUT_DIR not defined" ; exit 1 ;
-    elif [ ! -d "${INPUT_DIR}" ]; then
-      echo "INPUT_DIR cannot be located <${INPUT}>" ; exit 1 ;
+    if [ ! -v TRUTH_DIR ]; then
+      echo "TRUTH_DIR not defined" ; exit 1 ;
+    elif [ ! -d "${TRUTH_DIR}" ]; then
+      echo "TRUTH_DIR cannot be located <${TRUTH_DIR}>" ; exit 1 ;
     fi
 
     if [ ! -v OUTPUT_DIR ]; then
       echo "OUTPUT_DIR not defined" ; exit 1 ;
-    elif [ ! -d "${OUTPUT_DIR}" ]; then
-      echo "OUTPUT_DIR folder cannot be located <${OUTPUT_DIR}>" ; exit 1 ;
     fi
 
     # unique output folder
     if [ "${OUTPUT_STAMP}" == "true" ]; then
       OUTPUT_DIR+="/$(date '+%Y%m%d_%H%M%S_%N')"
     fi
-
-    # python directory (only valid on host machine)
-    PYTHON_DIR="$(cd "$(dirname "${RUNTIME_SCRIPT}")/../source/engine"; pwd)"
 
     # log file
     LOG_FILE="${OUTPUT_DIR}/truth.log"
@@ -109,8 +108,7 @@ case ${task_arg} in
     # runtime docker volumes
     RUNTIME_VOLUMES=(
         "${RUNTIME_SCRIPT}:${RUNTIME_SCRIPT_DOCKER}:ro"
-        "${PYTHON_DIR}:${PYTHON_DIR_DOCKER}:ro"
-        "${INPUT_DIR}:${INPUT_DIR_DOCKER}:ro"
+        "${TRUTH_DIR}:${TRUTH_DIR_DOCKER}:ro"
         "${OUTPUT_DIR}:${OUTPUT_DIR_DOCKER}"
     )
 
@@ -119,11 +117,16 @@ case ${task_arg} in
 
   # ground truth run (runs inside docker)
   truth-run)
-    python3 "${PYTHON_DIR_DOCKER}/truth.py" \
-      -i "${INPUT_DIR_DOCKER}" \
+
+    echo "TRUTH_DIR CONTENTS"
+    ls -la "${TRUTH_DIR_DOCKER}"
+
+    python3 "${VKM_SOURCE_DIR_DOCKER}/source/engine/truth.py" \
+      -g "${TRUTH_DIR_DOCKER}" \
       -o "${OUTPUT_DIR_DOCKER}" \
       "${@}"
     ;;
+
 
 
   # METRICS=======================================================
@@ -136,6 +139,7 @@ case ${task_arg} in
 
     # subshell for logging
     (
+      echo "TRUTH_DIR  = ${TRUTH_DIR}"
       echo "INPUT_DIR  = ${INPUT_DIR}"
       echo "OUTPUT_DIR = ${OUTPUT_DIR}"
 
@@ -165,14 +169,19 @@ case ${task_arg} in
             "USAGE: just metrics [OPTIONS]"
             ""
             "OPTIONS"
-            "  -i, --input [PATH]        Input folder"
-            "  -o, --output [PATH]       Output folder"
-            "  --no-output-stamp         Do not create unique date-stamped output folder"
+            "  -g, --groundtruth [PATH]  Ground truth directory"
+            "  -i, --input [PATH]        Input directory"
+            "  -o, --output [PATH]       Output directory"
+            "  --no-output-stamp         Do not create unique date-stamped output subdirectory"
+            ""
+            "  additional options are passed to ./source/engine/metrics.py"
             ""
           )
           printf '%s\n' "${USAGE[@]}"
           exit
           ;;
+        -g|--groundtruth)
+            TRUTH_DIR=$2 ; shift 2 ;;
         -i|--input)
             INPUT_DIR=$2 ; shift 2 ;;
         -o|--output)
@@ -185,25 +194,26 @@ case ${task_arg} in
     done
 
     # check options
+    if [ ! -v TRUTH_DIR ]; then
+      echo "TRUTH_DIR not defined" ; exit 1 ;
+    elif [ ! -d "${TRUTH_DIR}" ]; then
+      echo "TRUTH_DIR cannot be located <${TRUTH_DIR}>" ; exit 1 ;
+    fi
+
     if [ ! -v INPUT_DIR ]; then
       echo "INPUT_DIR not defined" ; exit 1 ;
     elif [ ! -d "${INPUT_DIR}" ]; then
-      echo "INPUT_DIR cannot be located <${INPUT}>" ; exit 1 ;
+      echo "INPUT_DIR cannot be located <${INPUT_DIR}>" ; exit 1 ;
     fi
 
     if [ ! -v OUTPUT_DIR ]; then
       echo "OUTPUT_DIR not defined" ; exit 1 ;
-    elif [ ! -d "${OUTPUT_DIR}" ]; then
-      echo "OUTPUT_DIR folder cannot be located <${OUTPUT_DIR}>" ; exit 1 ;
     fi
 
     # unique output folder
     if [ "${OUTPUT_STAMP}" == "true" ]; then
       OUTPUT_DIR+="/$(date '+%Y%m%d_%H%M%S_%N')"
     fi
-
-    # python directory (only valid on host machine)
-    PYTHON_DIR="$(cd "$(dirname "${RUNTIME_SCRIPT}")/../source/engine"; pwd)"
 
     # log file
     LOG_FILE="${OUTPUT_DIR}/truth.log"
@@ -215,7 +225,7 @@ case ${task_arg} in
     # runtime docker volumes
     RUNTIME_VOLUMES=(
         "${RUNTIME_SCRIPT}:${RUNTIME_SCRIPT_DOCKER}:ro"
-        "${PYTHON_DIR}:${PYTHON_DIR_DOCKER}:ro"
+        "${TRUTH_DIR}:${TRUTH_DIR_DOCKER}:ro"
         "${INPUT_DIR}:${INPUT_DIR_DOCKER}:ro"
         "${OUTPUT_DIR}:${OUTPUT_DIR_DOCKER}"
     )
@@ -225,11 +235,13 @@ case ${task_arg} in
 
   # metrics run (runs inside docker)
   metrics-run)
-    python3 "${PYTHON_DIR_DOCKER}/metrics.py" \
+    python3 "${VKM_SOURCE_DIR_DOCKER}/source/engine/metrics.py" \
+      -g "${TRUTH_DIR_DOCKER}" \
       -i "${INPUT_DIR_DOCKER}" \
       -o "${OUTPUT_DIR_DOCKER}" \
       "${@}"
     ;;
+
 
 
   # INVALID TASK==============================================

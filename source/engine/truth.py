@@ -3,56 +3,48 @@ import json
 import argparse
 import copy
 import glob
+import numpy as np
 
+import openmesh
 import vkm
+from vxl import vnl
+
+from osgeo import gdal, osr
 
 
 # parse ground truth
-def run_groundtruth(inputpath,outputpath):
+def run_groundtruth(truthpath,outputpath):
 
   # check path existance
-  if not os.path.isdir(inputpath):
-    raise IOError('Input path not found <{}>'.format(inputpath))
+  if not os.path.isdir(truthpath):
+    raise IOError('Input path not found <{}>'.format(truthpath))
   elif not os.path.isdir(outputpath):
     raise IOError('Output path not found <{}>'.format(outputpath))
 
-  # locate file(s) of interest
-  keys = ('region','type','region_pc','dsm')
-  tmp = dict.fromkeys(keys)
-  tmp['valid'] = False
+  # locate region files
+  filereg = [os.path.join(truthpath,f) for f in os.listdir(truthpath)
+             if f.endswith(('.regions','.REGIONS'))]
 
-  data = {}
-  for root, dirs, files in os.walk(inputpath):
-    for file in files:
+  # initialize data
+  keys = ('name','region','type','region_pc','dsm','valid')
+  data = [dict.fromkeys(keys,None) for f in filereg]
 
-      if file.endswith(('.regions','.REGIONS')):
-        key = 'region'
-      elif file.endswith(('.types','.TYPES')):
-        key = 'type'
-      else:
-        continue
+  for file,item in zip(filereg,data):
+    name = os.path.splitext(os.path.basename(file))[0]
+    path = os.path.dirname(file)
 
-      id = os.path.splitext(file)[0]
-      if id not in data: data[id] = copy.deepcopy(tmp)
-      data[id][key] = os.path.join(root,file)
+    item['name'] = name
+    item['region'] = file
+    item['valid'] = False
 
-  # process each item
-  for id in data:
-    item = data[id]
-    path = os.path.dirname(item['region'])
-
-    # region file
-    f = item['region']
-    if not f or not os.path.isfile(f): continue
-
-    # region types
-    f = item['type']
-    if not f or not os.path.isfile(f): continue
-
-    # region_pc file
-    f = item['region'] + '.xyz'
+    # type file
+    f = os.path.join(path,name+'.types')
     if not os.path.isfile(f): continue
-    item['region_pc'] = f
+    item['type'] = f
+
+    # region_pc file (optional)
+    f = os.path.join(path,name+'.regions.xyz')
+    if os.path.isfile(f): item['region_pc'] = f
 
     # lidar dsm
     f = os.path.join(path,'LiDAR.tif')
@@ -61,9 +53,9 @@ def run_groundtruth(inputpath,outputpath):
 
     # glob for perimeter files
     perim = []
-    for file in glob.glob(os.path.join(path,'*_perimeter.txt')):
-      name = os.path.basename(file).replace('_perimeter.txt','')
-      perim.append((name,file))
+    for f in glob.glob(os.path.join(path,'*_perimeter.txt')):
+      n = os.path.basename(f).replace('_perimeter.txt','')
+      perim.append((n,f))
     item['perim'] = perim
 
     # set to valid
@@ -72,42 +64,82 @@ def run_groundtruth(inputpath,outputpath):
   # verbose discovered data
   print(json.dumps(data,indent=2))
 
+  if not any((item['valid'] for item in data)):
+    raise ValueError('No grouth truth regions discovered!')
+
+
   # process each item
-  for id in data:
-    item = data[id]
+  z_off = 232.111831665
+
+  for item in data:
     if not item['valid']: continue
 
-    z_off = 232.111831665
+    # load DSM metadata
+    dataset = gdal.Open(item['dsm'],gdal.GA_ReadOnly)
+    band = dataset.GetRasterBand(1)
+    meta = {
+        'RasterXSize':  dataset.RasterXSize,
+        'RasterYSize':  dataset.RasterYSize,
+        'RasterCount':  dataset.RasterCount,
+        'DataType':     band.DataType,
+        'Projection':   dataset.GetProjection(),
+        'GeoTransform': list(dataset.GetGeoTransform()),
+        'NoDataValue':  band.GetNoDataValue(),
+    }
+    dataset = None
 
+    # confirm expected DSM
+    if meta['RasterCount'] != 1:
+      raise ValueError('RasterCount is not 1')
+
+    # srs = osr.SpatialReference(wkt=meta['Projection'])
+    # if not srs.IsProjected or 'UTM' not in srs.GetAttrValue('projcs'):
+    #   func_raise_error('Inputfile is not UTM')
+
+    # ground truth pyvkm object
     gt = vkm.ground_truth(z_off)
+
+    # load base information
     gt.load_ground_truth_img_regions(item['region'])
-    gt.load_surface_types(item['type'])
     gt.load_dem_image(item['dsm'])
+    gt.load_surface_types(item['type'])
 
-    gt.load_ground_truth_pc_regions(item['region_pc'])
-    gt.compute_img_to_xy_trans()
+    # compute image to x/y transformation
+    if item['region_pc']:
+      tmp = item['region_pc']
+    else:
+      G = meta['GeoTransform']
+      img_to_xy = np.array([[G[1],G[2],0],[G[4],G[5],0],[0,0,1]],dtype=np.float)
+      tmp = vnl.matrix_fixed_3x3(img_to_xy)
 
+    gt.img_to_xy_trans(tmp)
+
+    # processing
     gt.snap_image_region_vertices()
-    gt.convert_img_regions_to_meshes()
+    # gt.convert_img_regions_to_meshes()
     gt.process_region_containment()
     gt.fit_region_planes()
     gt.construct_polygon_soup()
     gt.convert_to_meshes()
 
-    fileout = os.path.join(outputpath,id+'_surfaces.obj')
+    # base output
+    fileout = os.path.join(outputpath,item['name']+'_surfaces.obj')
     gt.write_processed_ground_truth(fileout)
 
-    fileout = os.path.join(outputpath,id+'_ground_planes.txt')
-    gt.write_ground_planes(fileout)
-
-    # process subregions
+    # load all site perimeters
     for p in item['perim']:
       gt.load_site_perimeter(p[0],p[1])
 
+    # site perimiter ground planes
+    fileout = os.path.join(outputpath,item['name']+'_ground_planes.txt')
+    gt.write_ground_planes(fileout)
+
+    # subregion output
+    for p in item['perim']:
+      gt.construct_extruded_gt_model(p[0])
+
       fileout = os.path.join(outputpath,p[0]+'_xy_polys.txt')
       gt.write_xy_polys(p[0],fileout)
-
-      gt.construct_extruded_gt_model(p[0])
 
       fileout = os.path.join(outputpath,p[0]+'_extruded.obj')
       gt.write_extruded_gt_model(p[0],fileout)
@@ -119,10 +151,10 @@ def main(args=None):
 
   # setup input parser
   parser = argparse.ArgumentParser()
-  parser.add_argument('-i', '--input', dest='input',
-      help='Input path', required=True)
+  parser.add_argument('-g', '--groundtruth', dest='truth',
+      help='Ground truth directory', required=True)
   parser.add_argument('-o', '--output', dest='output',
-      help='Output path', required=True)
+      help='Output directory', required=True)
 
   # parse arguments
   args = parser.parse_args(args)
@@ -130,7 +162,7 @@ def main(args=None):
 
   # gather arguments
   kwargs = {
-    'inputpath': args.input,
+    'truthpath': args.truth,
     'outputpath': args.output,
   }
 

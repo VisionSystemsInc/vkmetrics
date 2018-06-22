@@ -6,6 +6,7 @@ set(PYVKM_SOURCES
   pyvkm.cxx
   pyvkm_ground_truth.h  pyvkm_ground_truth.cxx
   pyvkm_metrics.h  pyvkm_metrics.cxx
+  pyvkm_obj_io.h  pyvkm_obj_io.cxx
 )
 
 pybind11_add_module(pyvkm ${PYVKM_SOURCES})

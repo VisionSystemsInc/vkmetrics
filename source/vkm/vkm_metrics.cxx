@@ -1,5 +1,6 @@
 #include <sstream>
 #include <assert.h>
+#include <fstream>
 
 // VXL ------------------------------------
 #include <vgl/algo/vgl_fit_plane_3d.h>
@@ -12,7 +13,8 @@
 #include "vkm_metrics.h"
 
 
-xy_region::xy_region(std::map<size_t, PolyMesh> const& map){
+xy_region::xy_region(std::map<size_t, PolyMesh> const& map)
+{
   assert(map.size()>0);
   std::map<size_t, PolyMesh>::const_iterator mit = map.begin();
   PolyMesh mesh = mit->second;
@@ -50,10 +52,12 @@ xy_region::xy_region(std::map<size_t, PolyMesh> const& map){
   region_ = poly;
 }
 
-typename xy_region::PolyMesh xy_region::mesh(){
+
+typename xy_region::PolyMesh xy_region::mesh()
+{
   PolyMesh ret;
   for(size_t js = 0; js<region_.num_sheets(); ++js){
-    std::vector<OpenMesh::VertexHandle> vhandles;    
+    std::vector<OpenMesh::VertexHandle> vhandles;
     for(size_t i = 0; i< region_[js].size(); ++i){
       const vgl_point_2d<double>& vert = region_[js][i];
       double a = plane_.a(), b = plane_.b(), c = plane_.c(), d = plane_.d();
@@ -68,7 +72,9 @@ typename xy_region::PolyMesh xy_region::mesh(){
   return ret;
 }
 
-std::vector<vgl_point_3d<double> > xy_region::verts_3d() const{
+
+std::vector<vgl_point_3d<double> > xy_region::verts_3d() const
+{
   std::vector<vgl_point_3d<double> > ret;
   size_t n = region_[0].size();
   for (size_t i = 0; i < n; ++i) {
@@ -82,7 +88,9 @@ std::vector<vgl_point_3d<double> > xy_region::verts_3d() const{
   return ret;
 }
 
-void xy_region::print_poly(vgl_polygon<double> const& poly){
+
+void xy_region::print_poly(vgl_polygon<double> const& poly)
+{
   for(size_t js = 0; js<poly.num_sheets(); ++js){
     std::cout << "sheet " << js << std::endl;
     for(size_t i = 0; i< poly[js].size(); ++i)
@@ -90,7 +98,9 @@ void xy_region::print_poly(vgl_polygon<double> const& poly){
   }
 }
 
-xy_region xy_region::translate(double tx, double ty, double tz) const{
+
+xy_region xy_region::translate(double tx, double ty, double tz) const
+{
   xy_region ret;
   //translate verts, compute new bounding box
   for(size_t js = 0; js<region_.num_sheets(); ++js){
@@ -108,7 +118,9 @@ xy_region xy_region::translate(double tx, double ty, double tz) const{
   return ret;
 }
 
-vgl_point_2d<double> xy_region::xy_centroid() const{
+
+vgl_point_2d<double> xy_region::xy_centroid() const
+{
   vgl_point_2d<double> ret(0.0, 0.0);
   double xc = 0, yc = 0, nd = 0;
   for(size_t js = 0; js<region_.num_sheets(); ++js){
@@ -125,7 +137,12 @@ vgl_point_2d<double> xy_region::xy_centroid() const{
   return ret;
 }
 
-double xy_region::z_off(vgl_plane_3d<double> const& pl0, vgl_plane_3d<double> const& pl1, vgl_point_2d<double> const& p){
+
+double xy_region::z_off(
+    vgl_plane_3d<double> const& pl0,
+    vgl_plane_3d<double> const& pl1,
+    vgl_point_2d<double> const& p)
+{
     double n0x = pl0.a(), n0y = pl0.b(), n0z = pl0.c(), d0 = pl0.d();
     double n1x = pl1.a(), n1y = pl1.b(), n1z = pl1.c(), d1 = pl1.d();
     double tempx = p.x()*(n1z*n0x-n0z*n1x);
@@ -135,8 +152,10 @@ double xy_region::z_off(vgl_plane_3d<double> const& pl0, vgl_plane_3d<double> co
     return z;
 }
 
+
 // encode json string for score instance
-std::string score::json() const{
+std::string score::json() const
+{
   std::stringstream ss;
   ss << "{ " << "\"gt_region_id\" :" << gt_region_id_ << ','
      << "\"test_region_id\" :" << test_region_id_ << ','
@@ -149,7 +168,9 @@ std::string score::json() const{
   return ss.str();
 }
 
-score operator +(score const& sa, score const& sb){
+
+score operator +(score const& sa, score const& sb)
+{
   score ret;
   ret.comp_ = sa.comp_ + sb.comp_;
   ret.corr_ = sa.corr_ + sb.corr_;
@@ -157,19 +178,40 @@ score operator +(score const& sa, score const& sb){
   return ret;
 }
 
-score operator /=(score& a, double val){
+
+score operator /=(score& a, double val)
+{
   a.comp_ /=val;
   a.corr_/= val;
   a.iou_/= val;
   return a;
 }
 
-std::ostream& operator<<(std::ostream& str, score const& s){
+
+std::ostream& operator<<(std::ostream& str, score const& s)
+{
   str <<"(comp corr iou) " << s.comp_ << ' ' << s.corr_ << ' ' << s.iou_;
   return str;
 }
 
-void vkm_metrics::construct_xy_regions(){
+
+bool vkm_metrics::load_ground_planes(std::string const& path)
+{
+  std::ifstream istr(path.c_str());
+  if(!istr){
+    std::cout << "Can't load site ground planes from " << path << std::endl;
+    return false;
+  }
+  std::string site_name;
+  vgl_plane_3d<double> gnd_plane;
+  while(istr >> site_name >> gnd_plane)
+    local_gnd_planes_[site_name] = gnd_plane;
+  return true;
+}
+
+
+void vkm_metrics::construct_xy_regions()
+{
   // for now test model is only simply connected
   for(std::map<size_t, std::map<size_t,PolyMesh> >::iterator mit = test_model_.begin();
       mit != test_model_.end(); ++mit)
@@ -182,15 +224,18 @@ void vkm_metrics::construct_xy_regions(){
   }
 }
 
-void vkm_metrics::translate_test_model_xy(){
+
+void vkm_metrics::translate_test_model_xy()
+{
   //  registered_test_footprint_ = test_footprint_.translate(tx_, ty_);
   for(std::map<size_t, xy_region>::const_iterator rit = test_regions_.begin();
       rit != test_regions_.end(); ++rit)
     registered_test_regions_[rit->first] = (rit->second).translate(tx_, ty_);
 }
 
-void vkm_metrics::match_xy_regions(){
 
+void vkm_metrics::match_xy_regions()
+{
   for(std::map<size_t, xy_region>::const_iterator git = gt_regions_.begin();
       git != gt_regions_.end(); ++git){
     size_t gindx = git->first;
@@ -231,7 +276,9 @@ void vkm_metrics::match_xy_regions(){
   }
 }
 
-void vkm_metrics::compute_best_match_2d_score_stats(){
+
+void vkm_metrics::compute_best_match_2d_score_stats()
+{
   double dn = 0.0;
   score avg_score;
   score score_h;
@@ -263,7 +310,9 @@ void vkm_metrics::compute_best_match_2d_score_stats(){
   std::cout << " avg_best_match " << avg_score << std::endl;
 }
 
-void vkm_metrics::print_score_array(){
+
+void vkm_metrics::print_score_array()
+{
   std::cout << "gt indx   test_indx  area         comp   corr      iou     ang_er   z_er" << std::endl;
   for(std::map<size_t, std::pair<size_t, score > >::iterator sit = max_scores_.begin();
       sit != max_scores_.end(); ++sit){
@@ -272,7 +321,9 @@ void vkm_metrics::print_score_array(){
   }
 }
 
-void vkm_metrics::find_z_offset(){
+
+void vkm_metrics::find_z_offset()
+{
   z_off_ = 0.0;
   double iou_sum = 0.0;
   std::vector<std::pair<double, double> > area_zoff_vals;
@@ -324,7 +375,9 @@ void vkm_metrics::find_z_offset(){
   std::cout << "Average z error after registration " << avg_z_er << " meters (based on TP regions only)"<< std::endl;
 }
 
-bool vkm_metrics::save_transformed_regions_as_meshes(std::string site_name, std::string const& path) const{
+
+bool vkm_metrics::save_transformed_regions_as_meshes(std::string const& path, std::string site_name) const
+{
   std::map<std::string, vgl_plane_3d<double> >::const_iterator git;
   git = local_gnd_planes_.find(site_name);
   if(git == local_gnd_planes_.end()){
@@ -346,7 +399,10 @@ bool vkm_metrics::save_transformed_regions_as_meshes(std::string site_name, std:
   std::string mat_file = "junk.mtl";
   return vkm_obj_io::write_composite_obj_file(path, meshes, mat_file, mat);
 }
-void vkm_metrics::compute_best_match_3d_score_stats(){
+
+
+void vkm_metrics::compute_best_match_3d_score_stats()
+{
   for(std::map<size_t, std::pair<size_t, score> >::iterator mit =  max_scores_.begin();
       mit !=  max_scores_.end();  ++mit){
 
@@ -381,20 +437,9 @@ void vkm_metrics::compute_best_match_3d_score_stats(){
   }
 }
 
-bool vkm_metrics::load_ground_planes(std::string const& path){
-  std::ifstream istr(path.c_str());
-  if(!istr){
-    std::cout << "Can't load site ground planes from " << path << std::endl;
-    return false;
-  }
-  std::string site_name;
-  vgl_plane_3d<double> gnd_plane;
-  while(istr >> site_name >> gnd_plane)
-    local_gnd_planes_[site_name] = gnd_plane;
-  return true;
-}
 
-std::string vkm_metrics::json() const{
+std::string vkm_metrics::json() const
+{
   std::stringstream ss;
   ss << "[ ";
   size_t n = max_scores_.size();

@@ -42,7 +42,7 @@ class fit_plane_3d_by_type{
 
 public:
 
- fit_plane_3d_by_type(std::vector<vgl_point_3d<double> > const& pts): pts_(pts), verbose_(false){}
+  fit_plane_3d_by_type(std::vector<vgl_point_3d<double> > const& pts): pts_(pts), verbose_(false){}
   bool set_verbose(bool verbose){ verbose_ = verbose;}
   bool fit(std::string surface_type, vgl_plane_3d<double>& plane);
   bool fit_flat(vgl_plane_3d<double>& plane);
@@ -67,18 +67,15 @@ public:
   enum surface_t {FLAT, SLOPED, ARCHED, DOMED, MISC};
 
   // z_off the local vertical CS elevation - tangent plane to the Earth relative to the dem elevation
-  vkm_ground_truth(): z_off_(0.0), verbose_(false){}
+  vkm_ground_truth(): z_off_(0.0), verbose_(false) {H_.set_identity();}
 
-  vkm_ground_truth(double z_off):z_off_(z_off), verbose_(false){}
+  vkm_ground_truth(double z_off):z_off_(z_off), verbose_(false) {H_.set_identity();}
 
   void set_verbose(bool verbose){verbose_ = verbose;}
 
   //: file input
   // original annotation polygons in ground truth dem image coordinates
   bool load_ground_truth_img_regions(std::string const& path);
-
-  // annotated regions in local LVCS coordinates
-  bool load_ground_truth_pc_regions(std::string const& path);
 
   // region ids with assoicated type, e.g. "flat", "sloped" ...
   bool load_surface_types(std::string const& path);
@@ -100,8 +97,11 @@ public:
                                           std::map<size_t, std::map<size_t, PolyMesh> >& region_meshes,
                                           std::map<size_t, surface_t>& surface_types);
 
-  //: convert from geotif dem coordinates to local CS
-  bool compute_img_to_xy_trans();
+  //: directly set conversion from geotif dem image coordinates to local CS
+  void set_img_to_xy_trans(vnl_matrix_fixed<double,3,3> const& M);
+
+  //: compute conversion from geotif dem image coordinates to local CS
+  bool compute_img_to_xy_trans(std::string const& path);
 
   //: snap vertices to the same average location if within tol
   void snap_image_region_vertices(double tol = 2.5);
@@ -163,7 +163,7 @@ private:
     //: the input regions defined by annotator
   std::map<size_t, std::pair<vgl_polygon<double>, vgl_box_2d<double> >  > img_regions_;
 
-  //: a vkm_containment_tree is class for computing the containment relation between model regions 
+  //: a vkm_containment_tree is class for computing the containment relation between model regions
   // e.g.  the top surface of an air conditioner on a horizontal roof of a storage
   // enclosure on a lower horizonal roof. Each containing region is multiply connected
   vkm_containment_tree cont_tree_;
@@ -173,9 +173,6 @@ private:
 
   //: meshes for the raw input regions
   std::map<size_t, std::map<size_t, PolyMesh> > img_meshes_;
-
-  //: the region vertex positions in LVCS coordinates
-  std::map<size_t, std::vector<vgl_point_2d<double > > > pc_regions_;
 
   //: the digital elevation model
   vil_image_view<float> dem_;

@@ -11,20 +11,27 @@
 #include "vkm_containment_tree.h"
 
 
-std::ostream& operator <<(std::ostream& os, mc_region_2d const& mcr_2d){
+std::ostream& operator <<(std::ostream& os, mc_region_2d const& mcr_2d)
+{
   vgl_polygon<double> ply = mcr_2d.poly();//looses original hole id FIXME
   os << ply;
   return os;
 }
 
-vkm_containment_tree::vkm_containment_tree(std::vector<vgl_polygon<double> > const& polys){
+
+vkm_containment_tree::vkm_containment_tree(
+    std::vector<vgl_polygon<double> > const& polys)
+{
   std::map<size_t, vgl_polygon<double> > poly_map;
   for(size_t i = 0; i<polys.size(); ++i)
     poly_map[i] = polys[i];
   *this = vkm_containment_tree(poly_map);
 }
 
-vkm_containment_tree::vkm_containment_tree(std::map<size_t, vgl_polygon<double> > const& poly_map){
+
+vkm_containment_tree::vkm_containment_tree(
+    std::map<size_t, vgl_polygon<double> > const& poly_map)
+{
   for (std::map<size_t, vgl_polygon<double> >::const_iterator pit = poly_map.begin();
        pit != poly_map.end(); ++pit) {
     size_t indx = pit->first;
@@ -40,8 +47,10 @@ vkm_containment_tree::vkm_containment_tree(std::map<size_t, vgl_polygon<double> 
   }
 }
 
+
 //for use with 2D Hull refinement (improperly in modl_hull_facade_2d for now)
-vkm_containment_tree::vkm_containment_tree(std::vector<std::vector<vgl_point_2d<double> > > sheets)
+vkm_containment_tree::vkm_containment_tree(
+    std::vector<std::vector<vgl_point_2d<double> > > sheets)
 {
   for(size_t i = 0; i<sheets.size();i++)
   {
@@ -65,7 +74,11 @@ vkm_containment_tree::vkm_containment_tree(std::vector<std::vector<vgl_point_2d<
   }
 }
 
-static bool valid_overlap(double overlap_tol, vgl_polygon<double> const& poly_i, vgl_polygon<double> const& poly_j){
+
+static bool valid_overlap(
+    double overlap_tol, vgl_polygon<double> const& poly_i,
+    vgl_polygon<double> const& poly_j)
+{
   vgl_polygon<double> int_poly = vgl_clip(poly_i, poly_j);
   // find longest edge
   size_t n_sheets = int_poly.num_sheets();
@@ -100,7 +113,9 @@ static bool valid_overlap(double overlap_tol, vgl_polygon<double> const& poly_i,
   return true;
 }
 
-void vkm_containment_tree::construct_containment_maps(){
+
+void vkm_containment_tree::construct_containment_maps()
+{
   for (std::map<size_t, std::pair<vgl_polygon<double>, vgl_box_2d<double> >  >::iterator riti = input_regions_.begin();
        riti != input_regions_.end(); ++riti) {
     size_t indx_i = riti->first;
@@ -235,7 +250,9 @@ void vkm_containment_tree::construct_containment_maps(){
 
 }
 
-void vkm_containment_tree::set_root_nodes(){
+
+void vkm_containment_tree::set_root_nodes()
+{
   for (std::map<size_t, std::vector<size_t> >::iterator cit = contains_.begin();
        cit != contains_.end(); ++cit) {
     //is region contained by any other region?
@@ -248,7 +265,9 @@ void vkm_containment_tree::set_root_nodes(){
   }
 }
 
-void vkm_containment_tree::set_isolated_roots() {
+
+void vkm_containment_tree::set_isolated_roots()
+{
 	for (std::vector<size_t>::iterator iit = isolated_regions_.begin();
 		iit != isolated_regions_.end(); ++iit) {
 		if (contained_by_[*iit].size() != 0)
@@ -258,7 +277,10 @@ void vkm_containment_tree::set_isolated_roots() {
 	}
 }
 
-bool vkm_containment_tree::add_child(std::shared_ptr<cont_tree_node > & parent){
+
+bool vkm_containment_tree::add_child(
+    std::shared_ptr<cont_tree_node > & parent)
+{
   //contains_ <<>> the set of regions that contain at least one region (not self)
   const std::vector<size_t>& cntnd = contains_[parent->region_indx_];
   if(cntnd.size() == 0)
@@ -315,7 +337,9 @@ bool vkm_containment_tree::add_child(std::shared_ptr<cont_tree_node > & parent){
   return false;
 }
 
-void vkm_containment_tree::build_cont_trees(){
+
+void vkm_containment_tree::build_cont_trees()
+{
 	size_t n = roots_.size();
 	for (size_t i = 0; i < n; ++i) {
     build_containment_tree(roots_[i]);
@@ -324,7 +348,10 @@ void vkm_containment_tree::build_cont_trees(){
   }
 }
 
-void vkm_containment_tree::mc_regs_recursive(std::shared_ptr<cont_tree_node >& node){
+
+void vkm_containment_tree::mc_regs_recursive(
+    std::shared_ptr<cont_tree_node >& node)
+{
   size_t indx = node->region_indx_;
 
   size_t parent_index = -1;
@@ -355,7 +382,9 @@ void vkm_containment_tree::mc_regs_recursive(std::shared_ptr<cont_tree_node >& n
   return;
 }
 
-void vkm_containment_tree::construct_multiply_connected_regions(){
+
+void vkm_containment_tree::construct_multiply_connected_regions()
+{
   size_t n = roots_.size();
   for (size_t i = 0; i < n; ++i)
     mc_regs_recursive(roots_[i]);

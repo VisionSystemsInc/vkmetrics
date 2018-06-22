@@ -1,39 +1,112 @@
 import os
 import json
 import argparse
+import copy
+import glob
+
+import openmesh
+import vkm
 
 
 # parse ground truth
-def run_metrics(inputpath,outputpath):
+def run_metrics(inputpath,truthpath,outputpath):
 
   # check path existance
   if not os.path.isdir(inputpath):
-    raise IOError('Input path not found <{}>'.format(inputpath))
+    raise IOError('Input directory not found <{}>'.format(inputpath))
+  elif not os.path.isdir(truthpath):
+    raise IOError('Ground truth directory not found <{}>'.format(truthpath))
   elif not os.path.isdir(outputpath):
-    raise IOError('Output path not found <{}>'.format(outputpath))
+    raise IOError('Output directory not found <{}>'.format(outputpath))
 
-  # locate file(s) of interest
-  data = {}
-  for root, dirs, files in os.walk(inputpath):
-    for file in files:
 
-      if file.endswith(('.regions','.REGIONS')):
-        key = 'region'
-      elif file.endswith(('.types','.TYPES')):
-        key = 'type'
-      else:
-        continue
+  # ground truth surface files
+  filegt = [os.path.join(truthpath,f) for f in os.listdir(truthpath)
+            if f.endswith('_surfaces.obj')]
+  if len(filegt) == 0:
+    raise IOError('Missing ground truth "*_surfaces.obj"')
 
-      id = os.path.splitext(file)[0]
-      if id not in data: data[id] = {}
-      data[id][key] = os.path.join(root,file)
+  # ground truth data
+  keys = ('name','surface','ground','valid')
+  datagt = [dict.fromkeys(keys,None) for f in filegt]
 
-  # confirm each item has necessary input files
-  keys = ('region','type')
-  for id in data:
-    data[id]['valid'] = all(k in data[id] for k in keys)
+  for file,item in zip(filegt,datagt):
+    name = os.path.splitext(os.path.basename(file))[0]
+    name = name.rpartition('_surfaces')[0]
 
-  print(json.dumps(data,indent=2))
+    path = os.path.dirname(file)
+
+    item['name'] = name
+    item['surface'] = file
+    item['valid'] = False
+
+    # ground planes
+    f = os.path.join(path,name+'_ground_planes.txt')
+    if not os.path.isfile(f): continue
+    item['ground'] = f
+
+    # set to valid
+    item['valid'] = True
+
+  # handle only one ground truth file at this time
+  datagt = [item for item in datagt if item['valid']]
+  if len(datagt) > 1:
+    raise IOError('Too many ground truth OBJ files')
+  datagt = datagt[0]
+
+
+  # DEBUGGING: READ OBJ FILE
+  fileout = os.path.join(outputpath,'groups.obj')
+  groups = vkm.obj_io.read_group(datagt['surface'])
+  vkm.obj_io.write(fileout, groups)
+
+  fileout = os.path.join(outputpath,'meshes.obj')
+  meshes = vkm.obj_io.read_composite(datagt['surface'])
+  vkm.obj_io.write(fileout, meshes)
+
+  raise ValueError('DEBUGGING')
+
+
+  # locate input files
+  fileinput = [os.path.join(inputpath,f) for f in os.listdir(inputpath)
+              if f.endswith(('.obj','.OBJ'))]
+  if len(fileinput) == 0:
+    raise IOError('Missing input "*.obj"')
+
+
+
+  # verbose report
+  print('\nGROUND TRUTH:')
+  print(json.dumps(datagt,indent=2))
+
+  print('\nINPUT FILES:')
+  for f in fileinput: print(f)
+
+
+  # metrics for each input file
+  z_off = 232.111831665;
+  z_gnd_elev = 17.9843;
+
+  for file in fileinput:
+
+    met = vkm.metrics(z_off,z_gnd_elev)
+    # met.set_translation(tr[0], tr[1])
+
+    met.load_gnd_truth_model(datagt['surface'])
+    met.load_ground_planes(datagt['ground']);
+
+    met.load_simply_connected_test_model(file);
+    met.construct_xy_regions();
+    met.translate_test_model_xy();
+    met.match_xy_regions();
+
+    met.compute_best_match_2d_score_stats();
+    met.find_z_offset();
+    # met.save_transformed_regions_as_meshes(site, registered_model_path[site]);
+    met.compute_best_match_3d_score_stats();
+    met.print_score_array();
+
+
 
 
 
@@ -164,7 +237,6 @@ def run_metrics(inputpath,outputpath):
 #   registered_model_path["flat_roof_complex"] = model_dir + "flat_roof_complex/registered_model.obj";
 
 #   std::string gt_surf_path = gt_dir + "CORE3D-Phase1a.kw18_surfaces.obj";
-#   std::string gt_region_path = gt_dir + "CORE3D-Phase1a.kw18_all_regions.obj";
 #   std::string ground_plane_path = gt_dir + "site_ground_planes.txt";
 #   // translation found by basics/binary_regions, align binary images 
 #   // see basics/tests/test_binary_regions
@@ -190,11 +262,7 @@ def run_metrics(inputpath,outputpath):
 #   met.construct_xy_regions();
 #   met.translate_test_model_xy();
 #   met.match_xy_regions();
-#   // === not a particularly useful display===
-#   //met.compute_match_array(); 
-#   //std::string match_array_path = model_dir + "yasu_house/yasu_house";
-#   //met.save_match_array(match_array_path);
-#   //=-================
+
 #   met.compute_best_match_2d_score_stats();
 #   met.find_z_offset();
 #   met.save_transformed_regions_as_meshes(site, registered_model_path[site]);
@@ -214,9 +282,11 @@ def main(args=None):
   # setup input parser
   parser = argparse.ArgumentParser()
   parser.add_argument('-i', '--input', dest='input',
-      help='Input path', required=True)
+      help='Input model directory', required=True)
+  parser.add_argument('-g', '--groundtruth', dest='truth',
+      help='Ground truth model directory', required=True)
   parser.add_argument('-o', '--output', dest='output',
-      help='Output path', required=True)
+      help='Output directory', required=True)
 
   # parse arguments
   args = parser.parse_args(args)
@@ -225,6 +295,7 @@ def main(args=None):
   # gather arguments
   kwargs = {
     'inputpath': args.input,
+    'truthpath': args.truth,
     'outputpath': args.output,
   }
 
