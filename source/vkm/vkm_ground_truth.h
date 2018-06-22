@@ -66,7 +66,7 @@ public:
   // surface region labels defined by Kitware
   enum surface_t {FLAT, SLOPED, ARCHED, DOMED, MISC};
 
-  // z_off the local vertical CS elevation - tangent plane to the Earth relative to the dem elevation
+  // z_off the local vertical CS elevation - tangent plane to the Earth relative to the dsm elevation
   vkm_ground_truth(): z_off_(0.0), verbose_(false) {H_.set_identity();}
 
   vkm_ground_truth(double z_off):z_off_(z_off), verbose_(false) {H_.set_identity();}
@@ -74,16 +74,16 @@ public:
   void set_verbose(bool verbose){verbose_ = verbose;}
 
   //: file input
-  // original annotation polygons in ground truth dem image coordinates
+  // original annotation polygons in ground truth dsm image coordinates
   bool load_ground_truth_img_regions(std::string const& path);
 
   // region ids with assoicated type, e.g. "flat", "sloped" ...
   bool load_surface_types(std::string const& path);
 
-  // the ground truth DEM
-  bool load_dem_image(std::string const& path);
+  // the ground truth DSM
+  bool load_dsm_image(std::string const& path);
 
-  // a set of boundary points for a site in DEM image coordinates
+  // a set of boundary points for a site in DSM image coordinates
   // (used to delineate a structure for metric analysis and display)
   bool load_site_perimeter(std::string const& site_name,  std::string const& bwm_ptset_path);
 
@@ -97,10 +97,10 @@ public:
                                           std::map<size_t, std::map<size_t, PolyMesh> >& region_meshes,
                                           std::map<size_t, surface_t>& surface_types);
 
-  //: directly set conversion from geotif dem image coordinates to local CS
+  //: directly set conversion from geotif dsm image coordinates to local CS
   void set_img_to_xy_trans(vnl_matrix_fixed<double,3,3> const& M);
 
-  //: compute conversion from geotif dem image coordinates to local CS
+  //: compute conversion from geotif dsm image coordinates to local CS
   bool compute_img_to_xy_trans(std::string const& path);
 
   //: snap vertices to the same average location if within tol
@@ -156,11 +156,13 @@ private:
   //: convert enum to string
   static std::string type_to_string(surface_t stype);
 
-  bool verbose_;// print debug output
-  //: the tranformation from dem image coordinates to 3-d LVCS coordinates
-  vgl_point_3d<double> dem_to_world(unsigned u_dem, unsigned v_dem) const;
+  // print debug output
+  bool verbose_;
 
-    //: the input regions defined by annotator
+  //: the tranformation from dsm image coordinates to 3-d LVCS coordinates
+  vgl_point_3d<double> dsm_to_world(unsigned u_dsm, unsigned v_dsm) const;
+
+  //: the input regions defined by annotator
   std::map<size_t, std::pair<vgl_polygon<double>, vgl_box_2d<double> >  > img_regions_;
 
   //: a vkm_containment_tree is class for computing the containment relation between model regions
@@ -175,12 +177,12 @@ private:
   std::map<size_t, std::map<size_t, PolyMesh> > img_meshes_;
 
   //: the digital elevation model
-  vil_image_view<float> dem_;
+  vil_image_view<float> dsm_;
 
-  //: the offset between dem elevation and LVCS elevation
+  //: the offset between dsm elevation and LVCS elevation
   double z_off_;
 
-  //: the mapping between dem image coordinates and LVCS X-Y coordinates
+  //: the mapping between dsm image coordinates and LVCS X-Y coordinates
   vgl_h_matrix_2d<double> H_;
 
   //: the 3d fitted plane for planar regions ("flat" , "sloped")
@@ -195,7 +197,7 @@ private:
   //: site perimeter typically surrounding a single building (in local LVCS coordinates )
   std::map<std::string, vgl_polygon<double> > perimeters_;
 
-  //: local ground plane for site derived from the DEM using the perimeter
+  //: local ground plane for site derived from the DSM using the perimeter
   std::map<std::string, vgl_plane_3d<double> > local_gnd_planes_;
 
   //: extruded 3d regions as a PolyMesh only outer boundaries

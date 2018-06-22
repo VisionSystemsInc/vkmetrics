@@ -26,9 +26,9 @@ namespace pyvkm {
       throw pybind11::value_error("load_surface_types failure!");
   }
 
-  void load_dem_image(vkm_ground_truth &_self, std::string const& path) {
-    if (!_self.load_dem_image(path))
-      throw pybind11::value_error("load_dem_image failure!");
+  void load_dsm_image(vkm_ground_truth &_self, std::string const& path) {
+    if (!_self.load_dsm_image(path))
+      throw pybind11::value_error("load_dsm_image failure!");
   }
 
   void load_site_perimeter(vkm_ground_truth &_self, std::string const& name, std::string const& path) {
@@ -92,7 +92,7 @@ namespace pyvkm {
       .def("set_verbose", &vkm_ground_truth::set_verbose)
       .def("load_ground_truth_img_regions", &load_ground_truth_img_regions)
       .def("load_surface_types", &load_surface_types)
-      .def("load_dem_image", &load_dem_image)
+      .def("load_dsm_image", &load_dsm_image)
       .def("load_site_perimeter", &load_site_perimeter)
       .def("write_xy_polys", &write_xy_polys)
       .def("write_processed_ground_truth", &write_processed_ground_truth)

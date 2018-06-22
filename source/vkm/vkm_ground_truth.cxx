@@ -369,22 +369,22 @@ void vkm_ground_truth::set_img_to_xy_trans(vnl_matrix_fixed<double,3,3> const& M
 }
 
 
-bool vkm_ground_truth::load_dem_image(std::string const& path)
+bool vkm_ground_truth::load_dsm_image(std::string const& path)
 {
-  dem_ = vil_load(path.c_str());
-  if(dem_.ni()==0){
-    std::cout << "load dem failed for path " << path << std::endl;
+  dsm_ = vil_load(path.c_str());
+  if(dsm_.ni()==0){
+    std::cout << "load dsm failed for path " << path << std::endl;
     return false;
   }
   return true;
 }
 
 
-vgl_point_3d<double> vkm_ground_truth::dem_to_world(unsigned u_dem, unsigned v_dem) const
+vgl_point_3d<double> vkm_ground_truth::dsm_to_world(unsigned u_dsm, unsigned v_dsm) const
 {
-  double z = dem_(u_dem, v_dem)-z_off_;
+  double z = dsm_(u_dsm, v_dsm)-z_off_;
   // transform to x-y
-  double du = static_cast<double>(u_dem), dv = static_cast<double>(v_dem);
+  double du = static_cast<double>(u_dsm), dv = static_cast<double>(v_dsm);
   vgl_homg_point_2d<double> img_pt_h(du, dv), xy_pt_h;
   xy_pt_h = H_*img_pt_h;
   vgl_point_2d<double> xy_pt(xy_pt_h);
@@ -411,7 +411,7 @@ void vkm_ground_truth::fit_region_planes()
     for(scan_it.reset();scan_it.next();){
       int v = scan_it.scany();
       for( int u = (scan_it.startx()); u <= (scan_it.endx()); ++u){
-        vgl_point_3d<double> p3d = dem_to_world(u, v);
+        vgl_point_3d<double> p3d = dsm_to_world(u, v);
         ppts.push_back(p3d);
         //     if(indx == debug_indx)
         //std::cout << p3d.x() << ' ' << p3d.y() << ' ' << p3d.z() << std::endl;
@@ -499,7 +499,7 @@ static bool repair_topology_caseI(
   //if outer boundary and hole boundary are exactly coincient can cause drawing issues
   vgl_vector_2d<double> hole_translation = unmatched_seg.normal();
 
-  // must translate at least one dem pixel distance (discrete dem image coordinates)
+  // must translate at least one dsm pixel distance (discrete dsm image coordinates)
   double max_component = fabs(hole_translation.x());
   if (fabs(hole_translation.y()) > max_component)
 	  max_component = fabs(hole_translation.y());
@@ -607,12 +607,14 @@ static bool repair_topology_caseI(
   if(p1_matched){
     std::cout << " p1 " << p1 ;
     if(p2_edge_found)
-      std::cout << " p2 edge split (" << p2_split_edge.first << ' ' << p2_split_edge.second << ")" << std::endl;
+      std::cout << " p2 edge split (" << p2_split_edge.first << ' ' << p2_split_edge.second << ")";
+    std::cout << std::endl;
   }
   if(p2_matched){
     std::cout << " p2 " << p2 ;
     if(p1_edge_found)
-      std::cout << " p1 edge split " << p1_split_edge.first << ' ' << p1_split_edge.second << ")" << std::endl;
+      std::cout << " p1 edge split " << p1_split_edge.first << ' ' << p1_split_edge.second << ")";
+    std::cout << std::endl;
   }
   std::vector<vgl_point_2d<double> >  to_erase; // vertices to remove from outer cycle
   // case I p1 and p2 matched - just remove matched edges
@@ -856,7 +858,8 @@ bool vkm_ground_truth::ensure_consistent_topology(
       //
       // Note that region labeled "hole" is actually outside the outer cycle but all its vertices touch
       // the outer cycle boundary and thus are considered "inside", which is a correct result
-      std::cout << "In face " << outer_index << " Hole " << hole_idx << " a partial match of " << nm << " not matched and " << nh - nm << "  matched out of " << nh << " hole edges" << std::endl;
+      std::cout << "In face " << outer_index << " Hole " << hole_idx << " a partial match of " << nm
+                << " not matched and " << nh - nm << " matched out of " << nh << " hole edges" << std::endl;
       repair_topology_caseI(mcr_2d, matched_outer_edge_vert_ids, unmatched_hole_edge_segs[0], hole_idx, tol);
     }//end CaseI
   }
@@ -884,7 +887,7 @@ void vkm_ground_truth::construct_polygon_soup()
     size_t nout = mcr_2d.outer_cycle_.size();
     for(size_t vi =0; vi<nout; ++vi){
       unsigned u = static_cast<unsigned>(mcr_2d.outer_cycle_[vi].x()), v =static_cast<unsigned>( mcr_2d.outer_cycle_[vi].y());
-      vgl_point_3d<double> p3d = dem_to_world(u, v);
+      vgl_point_3d<double> p3d = dsm_to_world(u, v);
       vgl_point_3d<double> proj_z;
       if(!proj_vertical(p3d, pl, proj_z)){
         std::cout << " index = " << indx << std::endl;
@@ -899,7 +902,7 @@ void vkm_ground_truth::construct_polygon_soup()
       size_t nh = hole.size();
       for(size_t vh = 0; vh<nh; ++vh){
         unsigned u = static_cast<unsigned>(hole[vh].x()), v =static_cast<unsigned>(hole[vh].y());
-        vgl_point_3d<double> p3d = dem_to_world(u, v);
+        vgl_point_3d<double> p3d = dsm_to_world(u, v);
         vgl_point_3d<double> proj_z;
         if(!proj_vertical(p3d, pl, proj_z)){
           std::cout << " index = " << indx << std::endl;
@@ -1134,7 +1137,7 @@ void vkm_ground_truth::convert_img_regions_to_meshes()
     std::vector<PolyMesh::VertexHandle> vhandles;
     for(size_t i = 0; i<n; ++i){
       unsigned u = static_cast<unsigned>(verts[i].x()), v =static_cast<unsigned>(verts[i].y());
-      vgl_point_3d<double> p3d = dem_to_world(u, v);
+      vgl_point_3d<double> p3d = dsm_to_world(u, v);
       OpenMesh::Vec3f vf(static_cast<float>(p3d.x()), static_cast<float>(p3d.y()), static_cast<float>(p3d.z()));
       vhandles.push_back(mesh.add_vertex(vf));
     }
@@ -1146,7 +1149,7 @@ void vkm_ground_truth::convert_img_regions_to_meshes()
 
 bool vkm_ground_truth::load_site_perimeter(std::string const& site_name, std::string const& bwm_ptset_path)
 {
-  // currently defined by a bwm pointset ascii file in dem image coordinates - replace later with Kitware format
+  // currently defined by a bwm pointset ascii file in dsm image coordinates - replace later with Kitware format
   std::ifstream istr(bwm_ptset_path.c_str());
   if(!istr){
     std::cout << "Failed to open " << bwm_ptset_path << " for reading footprint" << std::endl;
@@ -1164,7 +1167,7 @@ bool vkm_ground_truth::load_site_perimeter(std::string const& site_name, std::st
     double ud , vd;
     istr >> ud >> vd >> std::ws;
     unsigned u = static_cast<unsigned>(ud), v = static_cast<unsigned>(vd);
-    vgl_point_3d<double> p3d = dem_to_world(u, v);
+    vgl_point_3d<double> p3d = dsm_to_world(u, v);
     verts.push_back(vgl_point_2d<double>(p3d.x(), p3d.y()));
     avg_z += p3d.z();
   }

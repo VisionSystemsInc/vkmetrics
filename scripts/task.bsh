@@ -216,7 +216,7 @@ case ${task_arg} in
     fi
 
     # log file
-    LOG_FILE="${OUTPUT_DIR}/truth.log"
+    LOG_FILE="${OUTPUT_DIR}/metrics.log"
 
     # create output folders & log file
     mkdir -p "${OUTPUT_DIR}"

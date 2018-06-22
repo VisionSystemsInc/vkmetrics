@@ -101,7 +101,7 @@ def run_groundtruth(truthpath,outputpath):
 
     # load base information
     gt.load_ground_truth_img_regions(item['region'])
-    gt.load_dem_image(item['dsm'])
+    gt.load_dsm_image(item['dsm'])
     gt.load_surface_types(item['type'])
 
     # compute image to x/y transformation
