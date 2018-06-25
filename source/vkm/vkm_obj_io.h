@@ -43,7 +43,7 @@ public:
     // open file
     std::ifstream istr(obj_path.c_str());
     if(!istr){
-      std::cerr << "Failed to open " << obj_path << " for writing obj file" << std::endl;
+      std::cerr << "Failed to open " << obj_path << " for reading" << std::endl;
       return false;
     }
 
@@ -293,7 +293,7 @@ public:
     // open file
     std::ofstream ostr(obj_path.c_str());
     if(!ostr){
-      std::cout << "Failed to open " << obj_path << " for writing obj file" << std::endl;
+      std::cerr << "Failed to open " << obj_path << " for writing" << std::endl;
       return false;
     }
 
