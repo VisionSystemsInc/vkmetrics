@@ -20,7 +20,7 @@ namespace pyvkm {
   {
     std::map<std::string, MeshT> scene;
     if(!vkm_obj_io::read_composite_obj_file<MeshT>(obj_path, scene))
-      throw py::index_error("Read group OBJ failed");
+      throw py::value_error("Read group OBJ failed");
     return scene;
   }
 
@@ -29,7 +29,7 @@ namespace pyvkm {
   {
     std::map<size_t, std::map<size_t,MeshT> > scene;
     if(!vkm_obj_io::read_composite_obj_file<MeshT>(obj_path, scene))
-      throw py::index_error("Read composite OBJ failed");
+      throw py::value_error("Read composite OBJ failed");
     return scene;
   }
 
@@ -40,7 +40,7 @@ namespace pyvkm {
       std::string const& mat_file, std::string const& mat)
   {
     if(!vkm_obj_io::write_composite_obj_file<MeshT>(obj_path, scene, mat_file, mat))
-      throw py::index_error("Write composite OBJ failed");
+      throw py::value_error("Write composite OBJ failed");
   }
 
   template< typename MeshT >
@@ -50,7 +50,7 @@ namespace pyvkm {
       std::string const& mat_file, std::string const& mat)
   {
     if(!vkm_obj_io::write_composite_obj_file<MeshT>(obj_path, scene, mat_file, mat))
-      throw py::index_error("Write composite OBJ failed");
+      throw py::value_error("Write composite OBJ failed");
   }
 
 
