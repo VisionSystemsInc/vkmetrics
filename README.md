@@ -19,6 +19,8 @@ This project is designed to be run within a docker container, meaning the depend
 
 [Docker compose 1.20 or newer](https://docs.docker.com/compose/install/) which manages running multiple docker applications
 
+[J.U.S.T.](https://github.com/VisionSystemsInc/just/releases) which simplified tasking
+
 ### submodules
 
 This project consists of a number of submodules that are themselves separate repositories. Make sure to get all the submodules by using
@@ -41,9 +43,8 @@ Install may take some time (possibly 10 minutes or more depending on hardware).
 
 ## Building
 
-We recommend using bash. This is the default shell for macOS and many flavors of Linux. 
+We recommend using bash. This is the default shell for macOS and many flavors of Linux.
 On windows installing git installs git bash by default.
-
 
 ## Elevated permissions
 
@@ -74,10 +75,6 @@ Library for generic and efficient representation and manipulation of polygonal m
 #### VXL
 
 The Vision something Library. contains a wide array of different computer vision, 3D processing and mathematics libraries for use in computer vision and related applications. See http://vxl.sourceforge.net/ for more information.
-
-#### VSI_common
-
-A set of common tools for use across VSI applications. This includes the 'just' command and other scripts
 
 #### pybind11
 
