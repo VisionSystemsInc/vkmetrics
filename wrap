@@ -1,21 +1,3 @@
 #!/usr/bin/env bash
-# You can either source this file to setup the environment or pass
-# commands through it, e.g., `./wrap just build`.
-
-sourceife(){ if [ -f "${1}" ]; then set -a; source "${1}"; set +a; fi }
-sourceife "$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)/external/vsi_common/env.bsh"
-sourceife "$(dirname "${BASH_SOURCE[0]}")/local.env"
-sourceife "$(dirname "${BASH_SOURCE[0]}")/vkm.env"
-sourceife "$(dirname "${BASH_SOURCE[0]}")/local_post.env"
-
-#This works as long as you don't name this script 'bash'... SO DON'T!!!
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then #If not being sourced
-  if [ "$#" == "0" ]; then #If no args
-    bash --norc #Spawn another shell
-  else #Else run whatever the args are
-    if [ "$(type -t "$1")" == "file" ] || [ "$(type -t "$1")" == "alias" ]; then
-      exec "${@}"
-    fi
-    "${@}"
-  fi
-fi
+: "$(dirname "${BASH_SOURCE[0]}")"
+. "${VSI_COMMON_DIR:-"${_}"/external/vsi_common}/linux/Just_wrap" "${_}"/vkm.env ${@+"${@}"}

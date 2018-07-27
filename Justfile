@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-set -euE
 
-export CWD="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
-source_environment_files "${CWD}/vkm.env"
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then # If being sourced
+  set -euE
+fi
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)/wrap"
+cd "${VKM_CWD}"
 
 #Import things like Docker-compose helper function
 source "${VSI_COMMON_DIR}/linux/just_docker_functions.bsh"
@@ -15,7 +18,7 @@ function caseify()
   case ${just_arg} in
 
     ### Docker build tasks
-    build) #Build all necessary docker images
+    build) # Build all necessary docker images
       (justify build recipes gosu ninja cmake)
       (justify build main)
       ;;
@@ -25,7 +28,7 @@ function caseify()
       ;;
 
     ### Code compilation
-    compile) #Build the source code
+    compile) # Build the source code
       Docker-compose -f "${VKM_CWD}/docker-compose.yml" run compiler compile
       ;;
 
@@ -40,11 +43,11 @@ function caseify()
       ;;
 
     ### Bash tasks (complex bash scripts that run within the Just environment)
-    truth) #Run ground truth routine
+    truth) # Run ground truth routine
       (justify _source "${VKM_CWD}/scripts/task.bsh" truth "${@}")
       extra_args+=$#
       ;;
-    metrics) #Run metrics routine
+    metrics) # Run metrics routine
       (justify _source "${VKM_CWD}/scripts/task.bsh" metrics "${@}")
       extra_args+=$#
       ;;
