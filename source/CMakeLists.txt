@@ -17,6 +17,8 @@ link_directories(${VKM_OPENMESH_BINARY_DIR}/Build/lib)
 set(VKM_VXL_SOURCE_DIR ${VKM_EXTERNAL_DIR}/vxl)
 set(VKM_VXL_BINARY_DIR ${CMAKE_BINARY_DIR}/vxl-build)
 
+set(VXL_USE_DCMTK "FALSE" CACHE BOOL "USE DCMTK")
+
 add_subdirectory(${VKM_VXL_SOURCE_DIR} ${VKM_VXL_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 include_directories(${VKM_VXL_SOURCE_DIR})

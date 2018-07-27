@@ -61,7 +61,6 @@ ExternalProject_add(vkm_main
         DEPENDS openmesh
         SOURCE_DIR ${VKM_VKM_SOURCE_DIR}
         CMAKE_ARGS "${CMAKE_ARGS}"
-        CMAKE_ARGS -DVXL_USE_DCMTK=0
         PREFIX ${CMAKE_CURRENT_BINARY_DIR}
         BINARY_DIR ${VKM_VKM_BINARY_DIR}
         STAMP_DIR ${VKM_VKM_STAMP_DIR}
