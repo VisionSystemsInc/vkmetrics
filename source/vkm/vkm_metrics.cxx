@@ -33,7 +33,8 @@ xy_region::xy_region(std::map<size_t, PolyMesh> const& map)
   }
   vgl_fit_plane_3d<double> fitter(plane_pts);
   double tol = 0.25;
-  assert(fitter.fit(tol, &std::cout));
+  bool good = fitter.fit(tol, &std::cerr);
+  assert(good);
   vgl_homg_plane_3d<double> plf = fitter.get_plane();
   plf.normalize();
   plane_.set(plf.a(), plf.b(), plf.c(), plf.d());
