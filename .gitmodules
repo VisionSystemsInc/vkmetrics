@@ -1,12 +1,9 @@
 [submodule "external/vxl"]
 	path = external/vxl
-	url = git@bitbucket.org:visionsystemsinc/vxl.git
+	url = https://github.com/vxl/vxl.git
 [submodule "external/openmesh"]
 	path = external/openmesh
 	url = git@bitbucket.org:visionsystemsinc/openmesh.git
-[submodule "external/vsi_common"]
-	path = external/vsi_common
-	url = https://github.com/VisionSystemsInc/vsi_common.git
 [submodule "external/pyvxl"]
 	path = external/pyvxl
 	url = https://github.com/VisionSystemsInc/pyvxl.git
