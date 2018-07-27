@@ -93,9 +93,9 @@ def run_metrics(inputpath,truthpath,outputpath):
     scores = json.loads(met.json(), object_pairs_hook=OrderedDict)
     met.print_score_array();
 
-    met.load_ground_planes(datagt['ground']);
-    fileout = os.path.join(outputpath,name+"_registered.obj")
-    met.save_transformed_regions_as_meshes(fileout, name);
+    # met.load_ground_planes(datagt['ground']);
+    # fileout = os.path.join(outputpath,name+"_registered.obj")
+    # met.save_transformed_regions_as_meshes(fileout, name);
 
 
 
@@ -207,23 +207,16 @@ def main(args=None):
 
   # setup input parser
   parser = argparse.ArgumentParser()
-  parser.add_argument('-i', '--input', dest='input',
+  parser.add_argument('-i', '--input', dest='inputpath',
       help='Input model directory', required=True)
-  parser.add_argument('-g', '--groundtruth', dest='truth',
+  parser.add_argument('-g', '--groundtruth', dest='truthpath',
       help='Ground truth model directory', required=True)
-  parser.add_argument('-o', '--output', dest='output',
+  parser.add_argument('-o', '--output', dest='outputpath',
       help='Output directory', required=True)
 
-  # parse arguments
-  args = parser.parse_args(args)
-  print(args)
-
-  # gather arguments
-  kwargs = {
-    'inputpath': args.input,
-    'truthpath': args.truth,
-    'outputpath': args.output,
-  }
+  # parse arguments as dict
+  kwargs = vars(parser.parse_args(args))
+  print(kwargs)
 
   # run function
   run_metrics(**kwargs)

@@ -100,8 +100,8 @@ def run_groundtruth(truthpath,outputpath):
     gt = vkm.ground_truth(z_off)
 
     # load base information
-    gt.load_ground_truth_img_regions(item['region'])
     gt.load_dsm_image(item['dsm'])
+    gt.load_ground_truth_img_regions(item['region'])
     gt.load_surface_types(item['type'])
 
     # compute image to x/y transformation
@@ -130,7 +130,7 @@ def run_groundtruth(truthpath,outputpath):
     for p in item['perim']:
       gt.load_site_perimeter(p[0],p[1])
 
-    # site perimiter ground planes
+    # site perimeter ground planes
     fileout = os.path.join(outputpath,item['name']+'_ground_planes.txt')
     gt.write_ground_planes(fileout)
 
@@ -151,20 +151,14 @@ def main(args=None):
 
   # setup input parser
   parser = argparse.ArgumentParser()
-  parser.add_argument('-g', '--groundtruth', dest='truth',
+  parser.add_argument('-g', '--groundtruth', dest='truthpath',
       help='Ground truth directory', required=True)
-  parser.add_argument('-o', '--output', dest='output',
+  parser.add_argument('-o', '--output', dest='outputpath',
       help='Output directory', required=True)
 
-  # parse arguments
-  args = parser.parse_args(args)
-  print(args)
-
-  # gather arguments
-  kwargs = {
-    'truthpath': args.truth,
-    'outputpath': args.output,
-  }
+  # parse arguments as dict
+  kwargs = vars(parser.parse_args(args))
+  print(kwargs)
 
   # run function
   run_groundtruth(**kwargs)
