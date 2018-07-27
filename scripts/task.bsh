@@ -7,11 +7,13 @@ set -euE
 RUNTIME_SCRIPT="${BASH_SOURCE[0]}"
 
 # directories/files inside docker
-RUNTIME_SCRIPT_DOCKER=${RUNTIME_SCRIPT_DOCKER-"//core3d/script.bsh"}
+BASE_DIR_DOCKER=${BASE_DIR_DOCKER-"${VSI_PATH_ESC-}/task"}
 
-TRUTH_DIR_DOCKER=${TRUTH_DIR_DOCKER-"/core3d/truth"}
-INPUT_DIR_DOCKER=${INPUT_DIR_DOCKER-"/core3d/input"}
-OUTPUT_DIR_DOCKER=${OUTPUT_DIR_DOCKER-"/core3d/output"}
+RUNTIME_SCRIPT_DOCKER=${RUNTIME_SCRIPT_DOCKER-"${BASE_DIR_DOCKER}/script.bsh"}
+
+TRUTH_DIR_DOCKER=${TRUTH_DIR_DOCKER-"${BASE_DIR_DOCKER}/truth"}
+INPUT_DIR_DOCKER=${INPUT_DIR_DOCKER-"${BASE_DIR_DOCKER}/input"}
+OUTPUT_DIR_DOCKER=${OUTPUT_DIR_DOCKER-"${BASE_DIR_DOCKER}/output"}
 
 
 # metrics main argument
@@ -35,7 +37,8 @@ case ${task_arg} in
 
       # run code
       VKM_VKM_VOLUMES+=( "${RUNTIME_VOLUMES[@]}" )
-      echo "${RUNTIME_VOLUMES[@]}"
+      echo "RUNTIME_VOLUMES:"
+      printf '  %s\n' "${RUNTIME_VOLUMES[@]}"
 
       justify run pipenv run "${RUNTIME_SCRIPT_DOCKER}" truth-run ${ARGS}
 
@@ -145,6 +148,9 @@ case ${task_arg} in
 
       # run code
       VKM_VKM_VOLUMES+=( "${RUNTIME_VOLUMES[@]}" )
+      echo "RUNTIME_VOLUMES:"
+      printf '  %s\n' "${RUNTIME_VOLUMES[@]}"
+
       justify run pipenv run "${RUNTIME_SCRIPT_DOCKER}" metrics-run ${ARGS}
 
     ) 2>&1 | tee -a "${LOG_FILE}"
