@@ -7,8 +7,9 @@ fi
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)/wrap"
 cd "${VKM_CWD}"
 
-#Import things like Docker-compose helper function
+# Import things like Docker-compose helper function
 source "${VSI_COMMON_DIR}/linux/just_docker_functions.bsh"
+source "${VSI_COMMON_DIR}/linux/just_git_functions.bsh"
 
 function caseify()
 {
@@ -44,11 +45,11 @@ function caseify()
 
     ### Bash tasks (complex bash scripts that run within the Just environment)
     truth) # Run ground truth routine
-      (justify _source "${VKM_CWD}/scripts/task.bsh" truth "${@}")
+      (source "${VKM_CWD}/scripts/task.bsh" truth "${@}")
       extra_args+=$#
       ;;
     metrics) # Run metrics routine
-      (justify _source "${VKM_CWD}/scripts/task.bsh" metrics "${@}")
+      (source "${VKM_CWD}/scripts/task.bsh" metrics "${@}")
       extra_args+=$#
       ;;
 

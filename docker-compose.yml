@@ -7,9 +7,10 @@ services:
       dockerfile: docker/compiler.Dockerfile
     image: ${VKM_DOCKER_REPO}:compiler
     volumes:
-      - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}
+      - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}:ro
       - ${VKM_BUILD_DIR}:${VKM_BUILD_DIR_DOCKER}
       - ${VKM_INSTALL_DIR}:${VKM_INSTALL_DIR_DOCKER}
+      - ${VSI_COMMON_DIR}:${VSI_COMMON_DIR_DOCKER}:ro
 
   vkm:
     build:
@@ -20,9 +21,10 @@ services:
       - USER_ID=${VKM_UID}
       - GROUP_ID=${VKM_GID}
     volumes:
-      - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}
-      - ${VKM_INSTALL_DIR}:${VKM_INSTALL_DIR_DOCKER}
+      - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}:ro
+      - ${VKM_INSTALL_DIR}:${VKM_INSTALL_DIR_DOCKER}:ro
       - ${VKM_VENV_DIR}:${VKM_VENV_DIR_DOCKER}
+      - ${VSI_COMMON_DIR}:${VSI_COMMON_DIR_DOCKER}:ro
     cap_add:
       - SYS_PTRACE
     security_opt:
