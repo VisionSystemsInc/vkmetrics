@@ -97,6 +97,12 @@ public:
                                           std::map<size_t, std::map<size_t, PolyMesh> >& region_meshes,
                                           std::map<size_t, surface_t>& surface_types);
 
+  //: directly set local vertical CS elevation
+  void set_z_off(double const& z_off);
+
+  //: compute local vertical CS elevation (minimum elevation in DSM)
+  bool compute_z_off();
+
   //: directly set conversion from geotif dsm image coordinates to local CS
   void set_img_to_xy_trans(vnl_matrix_fixed<double,3,3> const& M);
 

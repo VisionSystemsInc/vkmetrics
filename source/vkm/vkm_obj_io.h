@@ -113,7 +113,7 @@ public:
    * group identifiers not of the form "<MAJOR>_<MINOR>", with <MAJOR>
    * and <MINOR> of type unsigned integer may result in unspecifed operation.
    *
-   * optinally return any un-parsed property information for each group
+   * optionally return any un-parsed property information for each group
    * for later custom processing.
   */
   template< typename MeshT >

@@ -15,6 +15,7 @@
 #include <vgl/vgl_closest_point.h>
 #include <vnl/vnl_random.h>
 #include <vil/vil_load.h>
+#include <vil/vil_math.h>
 // ----------------------------------------
 
 #include "vkm_histogram.h"
@@ -301,6 +302,26 @@ bool vkm_ground_truth::load_surface_types(std::string const& path)
     surface_types_[index] = string_to_type(stype);
     istr >> std::ws;
   }
+  return true;
+}
+
+
+void vkm_ground_truth::set_z_off(double const& z_off)
+{
+  z_off_ = z_off;
+  std::cout << "Manual z offset: " << z_off_ << std::endl;
+}
+
+
+bool vkm_ground_truth::compute_z_off()
+{
+  float min,max;
+  vil_math_value_range(dsm_, min, max);
+  std::cout << "DSM range [min,max]: [" << min << "," << max << std::endl;
+
+  // save & report
+  z_off_ = min;
+  std::cout << "Computed z offset: " << z_off_ << std::endl;
   return true;
 }
 

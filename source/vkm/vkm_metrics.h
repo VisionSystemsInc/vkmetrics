@@ -27,12 +27,12 @@
 // -------------------- OpenMesh--------
 #include <OpenMesh/Core/Geometry/VectorT.hh>
 #include <OpenMesh/Core/IO/MeshIO.hh> //need to include even if no IO
+#include <OpenMesh/Core/Mesh/PolyConnectivity.hh>
 #include <OpenMesh/Core/Mesh/PolyMesh_ArrayKernelT.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 //--------------------------------------
 
 #include "vkm_obj_io.h"
-#include "vkm_ground_truth.h"
 
 
 // a useful data structure for managing 2-d and 3-d metric computations
@@ -42,7 +42,7 @@ struct xy_region{
   typedef OpenMesh::PolyMesh_ArrayKernelT<> PolyMesh;
   xy_region(){}
   // construct from a mesh - a plane is fit to the vertices
-  xy_region(std::map<size_t, PolyMesh> const& map);
+  xy_region(const PolyMesh& mesh);
 
   // set of 3d vertices for the region sheet 0 only (no holes)
   std::vector<vgl_point_3d<double> > verts_3d() const;
@@ -73,13 +73,20 @@ struct xy_region{
 
 //: manage the metric values (scores) for matching test and ground truth regions
 struct score{
-  score():gt_region_id_(0), test_region_id_(0) , area_(0.0), comp_(0.0), corr_(0.0), iou_(0.0), normal_ang_diff_(0.0), z_error_(0.0){}
+  score(): gt_id_(0), gt_name_(""), test_id_(0), test_name_(""),
+           gt_area_(0.0), test_area_(0.0), comp_(0.0), corr_(0.0), iou_(0.0),
+           normal_ang_diff_(0.0), z_error_(0.0) {}
+
   //: encode json string for a score instance
   std::string json() const;
+
   //: members
-  size_t gt_region_id_;     // region id for ground truth region
-  size_t test_region_id_;   // region id for the best matching test region
-  double area_;             // area of the ground truth region
+  size_t gt_id_;            // ground truth region id
+  std::string gt_name_;     // ground truth region name
+  size_t test_id_;          // test region id
+  std::string test_name_;   // test region name
+  double gt_area_;          // ground truth region area
+  double test_area_;        // test region area
   double comp_;             // completeness of the matching test region
   double corr_;             // correctness of the matching test region
   double iou_;              // intersection over union of the gt and test regions
@@ -109,27 +116,23 @@ public:
   typedef OpenMesh::TriMesh_ArrayKernelT<> TriMesh;
   typedef OpenMesh::PolyMesh_ArrayKernelT<> PolyMesh;
 
-  vkm_metrics(): z_off_(0.0), z_gnd_elev_(0.), tx_(0.0), ty_(0.0), verbose_(false){}
-
-  vkm_metrics(double z_off, double z_gnd_elev):z_off_(z_off), z_gnd_elev_(z_gnd_elev), tx_(0.0), ty_(0.0), verbose_(false){}
+  vkm_metrics(): z_off_(0.0), tx_(0.0), ty_(0.0), verbose_(false){}
 
   void set_verbose(bool verbose){verbose_ = verbose;}
   void set_translation(double tx, double ty){tx_ = tx; ty_=ty;}
 
   //: file input for ground truth models (covers entire area, e.g. D2)
-  bool load_ground_truth_model(std::string const& path){
-    return vkm_ground_truth::load_processed_ground_truth(path, gt_region_meshes_, gt_surface_types_);
-  }
+  bool load_ground_truth_model(std::string const& path);
 
   //: load ground plane information
   bool load_ground_planes(std::string const& path);
 
   //: read test model in .OBJ format, "site" is typically a single building
-  // to do - handle multiply connected test models (requires IFC or advanced City GML format)
-  bool load_simply_connected_test_model(std::string const& path, std::string site_name = ""){
-    site_name_ = site_name;
-    return vkm_obj_io::read_composite_obj_file(path, test_model_);
-  }
+  // TODO - handle multiply connected test models (requires IFC or advanced City GML format)
+  bool load_simply_connected_test_model(std::string const& path, std::string site_name = "");
+
+  // delete isolated vertices from ground truth & test model
+  void delete_isolated_vertices();
 
   //: convert meshes to xy regions - the projection of 3-d regions onto the x-y plane
   void construct_xy_regions();
@@ -164,30 +167,28 @@ private:
   metrics_params params_;
   std::string site_name_;
   double z_off_; // shift to align test with gt in z
-  double z_gnd_elev_; // the ground plane elevation (footprint z)
   double tx_;         // alignment x translation
   double ty_;         // alignment y translation
   score avg_best_match_score_; // average score for the highest IoU match to a given gt region
   score footprint_score_;      // the score for the registered footprints
 
-  //: the surface types defined by the annotator
-  std::map<size_t, vkm_ground_truth::surface_t> gt_surface_types_;
-
-  //: meshes for the raw input regions
-  std::map<size_t, std::map<size_t, PolyMesh> > gt_region_meshes_;
-
-  //: multiply connected regions as polygons in x-y world coordinates for the ground truth
-  std::map<size_t, xy_region> gt_regions_;
+  //: meshes for the ground truth region
+  std::map<std::string, PolyMesh> gt_model_;
 
   //: local ground plane for site derived from the DEM using the perimeter
   //   used for extruding test models
   std::map<std::string, vgl_plane_3d<double> > local_gnd_planes_;
 
+  //: multiply connected regions as polygons in x-y world coordinates for the ground truth
+  std::map<size_t, std::string> gt_names_;
+  std::map<size_t, xy_region> gt_regions_;
+
   //: meshes for test model
-  std::map<size_t, std::map<size_t,PolyMesh> > test_model_;
+  std::map<std::string, PolyMesh> test_model_;
 
   //: multiply connected regions as polygons in x-y world coordinates for the test model
   //  currently test model region are simply connected (no holes)
+  std::map<size_t, std::string> test_names_;
   std::map<size_t, xy_region> test_regions_;
   std::map<size_t, xy_region> registered_test_regions_;
 
