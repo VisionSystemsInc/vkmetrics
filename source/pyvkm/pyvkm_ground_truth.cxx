@@ -97,6 +97,8 @@ namespace pyvkm {
       .def("write_xy_polys", &write_xy_polys)
       .def("write_processed_ground_truth", &write_processed_ground_truth)
       // .def_static("load_processed_ground_truth", &vkm_ground_truth::load_processed_ground_truth)
+      .def("z_off", &vkm_ground_truth::set_z_off)
+      .def("z_off", &vkm_ground_truth::compute_z_off)
       .def("img_to_xy_trans", &compute_img_to_xy_trans)
       .def("img_to_xy_trans", &vkm_ground_truth::set_img_to_xy_trans)
       .def("snap_image_region_vertices", &vkm_ground_truth::snap_image_region_vertices,

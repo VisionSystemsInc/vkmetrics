@@ -46,12 +46,12 @@ namespace pyvkm {
     // functions
     metrics
       .def(py::init<>())
-      .def(py::init<double,double>(), py::arg("z_off")=0.0, py::arg("z_gnd_elev")=0.0)
       .def("set_verbose", &vkm_metrics::set_verbose)
       .def("set_translation", &vkm_metrics::set_translation)
       .def("load_ground_truth_model", &load_ground_truth_model)
       .def("load_ground_planes", &load_ground_planes)
       .def("load_simply_connected_test_model", &load_simply_connected_test_model)
+      .def("delete_isolated_vertices", &vkm_metrics::delete_isolated_vertices)
       .def("construct_xy_regions", &vkm_metrics::construct_xy_regions)
       .def("match_xy_regions", &vkm_metrics::match_xy_regions)
       .def("translate_test_model_xy", &vkm_metrics::translate_test_model_xy)
