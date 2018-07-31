@@ -4,145 +4,196 @@ import argparse
 import copy
 import glob
 import numpy as np
+import traceback
 
 import openmesh
 import vkm
-from vxl import vnl
+from vxl import vnl, vpgl
 
 from osgeo import gdal, osr
 
 
 # parse ground truth
-def run_groundtruth(truthpath,outputpath):
+def run_groundtruth(truth_json,output_path):
 
   # check path existance
-  if not os.path.isdir(truthpath):
-    raise IOError('Input path not found <{}>'.format(truthpath))
-  elif not os.path.isdir(outputpath):
-    raise IOError('Output path not found <{}>'.format(outputpath))
+  if not os.path.isfile(truth_json):
+    raise IOError('Ground truth JSON file not found <{}>'.format(truth_json))
+  elif not os.path.isdir(output_path):
+    raise IOError('Output path not found <{}>'.format(output_path))
 
-  # locate region files
-  filereg = [os.path.join(truthpath,f) for f in os.listdir(truthpath)
-             if f.endswith(('.regions','.REGIONS'))]
-
-  # initialize data
-  keys = ('name','region','type','region_pc','dsm','valid')
-  data = [dict.fromkeys(keys,None) for f in filereg]
-
-  for file,item in zip(filereg,data):
-    name = os.path.splitext(os.path.basename(file))[0]
-    path = os.path.dirname(file)
-
-    item['name'] = name
-    item['region'] = file
-    item['valid'] = False
-
-    # type file
-    f = os.path.join(path,name+'.types')
-    if not os.path.isfile(f): continue
-    item['type'] = f
-
-    # region_pc file (optional)
-    f = os.path.join(path,name+'.regions.xyz')
-    if os.path.isfile(f): item['region_pc'] = f
-
-    # lidar dsm
-    f = os.path.join(path,'LiDAR.tif')
-    if not os.path.isfile(f): continue
-    item['dsm'] = f
-
-    # glob for perimeter files
-    perim = []
-    for f in glob.glob(os.path.join(path,'*_perimeter.txt')):
-      n = os.path.basename(f).replace('_perimeter.txt','')
-      perim.append((n,f))
-    item['perim'] = perim
-
-    # set to valid
-    item['valid'] = True
-
-  # verbose discovered data
-  print(json.dumps(data,indent=2))
-
-  if not any((item['valid'] for item in data)):
-    raise ValueError('No grouth truth regions discovered!')
+  # helper function for supporting truth files
+  truth_dir = os.path.dirname(truth_json)
+  def truth_file(file):
+    return os.path.join(truth_dir,file)
 
 
-  # process each item
-  z_off = 232.111831665
+  # read truth data
+  with open(truth_json,'r') as fid:
+    data = json.load(fid)
 
-  for item in data:
-    if not item['valid']: continue
+  # confirm required fields
+  keys = ['region','type','dsm']
+  missing_keys = [k for k in keys if k not in data]
+  if missing_keys:
+      raise IOError('JSON input missing {}'.format(missing_keys))
 
-    # load DSM metadata
-    dataset = gdal.Open(item['dsm'],gdal.GA_ReadOnly)
-    band = dataset.GetRasterBand(1)
-    meta = {
-        'RasterXSize':  dataset.RasterXSize,
-        'RasterYSize':  dataset.RasterYSize,
-        'RasterCount':  dataset.RasterCount,
-        'DataType':     band.DataType,
-        'Projection':   dataset.GetProjection(),
-        'GeoTransform': list(dataset.GetGeoTransform()),
-        'NoDataValue':  band.GetNoDataValue(),
-    }
-    dataset = None
+  # check for truth files
+  for key in keys:
+    if not os.path.isfile(truth_file(data[key])):
+      raise IOError('Cannot find "{}" file <{}>'.format(key,data[key]))
 
-    # confirm expected DSM
-    if meta['RasterCount'] != 1:
-      raise ValueError('RasterCount is not 1')
+  # check perimeter files
+  if "perim" in data:
+    for item in data['perim']:
+      if not os.path.isfile(truth_file(item['file'])):
+        raise IOError('Cannot find "perim" file <{}>'.format(item['file']))
 
-    # srs = osr.SpatialReference(wkt=meta['Projection'])
-    # if not srs.IsProjected or 'UTM' not in srs.GetAttrValue('projcs'):
-    #   func_raise_error('Inputfile is not UTM')
 
-    # ground truth pyvkm object
-    gt = vkm.ground_truth(z_off)
+  # load DSM metadata
+  dataset = gdal.Open(truth_file(data['dsm']),gdal.GA_ReadOnly)
+  band = dataset.GetRasterBand(1)
+  meta = {
+      'RasterXSize':  dataset.RasterXSize,
+      'RasterYSize':  dataset.RasterYSize,
+      'RasterCount':  dataset.RasterCount,
+      'DataType':     band.DataType,
+      'Projection':   dataset.GetProjection(),
+      'GeoTransform': list(dataset.GetGeoTransform()),
+      'NoDataValue':  band.GetNoDataValue(),
+  }
 
-    # load base information
-    gt.load_dsm_image(item['dsm'])
-    gt.load_ground_truth_img_regions(item['region'])
-    gt.load_surface_types(item['type'])
+  # calculate elevation range
+  dsm = band.ReadAsArray()
+  NDV = meta['NoDataValue']
+  if NDV is not None:
+    mn = np.amin(dsm[dsm!=NDV])
+    mx = np.amax(dsm[dsm!=NDV])
+  else:
+    mn = np.amin(dsm)
+    mx = np.amax(dsm)
 
-    # compute image to x/y transformation
-    if item['region_pc']:
-      tmp = item['region_pc']
-    else:
-      G = meta['GeoTransform']
-      img_to_xy = np.array([[G[1],G[2],0],[G[4],G[5],0],[0,0,1]],dtype=np.float)
-      tmp = vnl.matrix_fixed_3x3(img_to_xy)
+  meta.update({
+      'MinimumElevation': float(mn),
+      'MaximumElevation': float(mx),
+  })
 
-    gt.img_to_xy_trans(tmp)
+  # clear DSM and GDAL dataaset
+  del dsm
+  del dataset
 
-    # processing
-    gt.snap_image_region_vertices()
-    # gt.convert_img_regions_to_meshes()
-    gt.process_region_containment()
-    gt.fit_region_planes()
-    gt.construct_polygon_soup()
-    gt.convert_to_meshes()
+  # confirm expected DSM
+  if meta['RasterCount'] != 1:
+    raise IOError('Ground truth RasterCount must be 1')
 
-    # base output
-    fileout = os.path.join(outputpath,item['name']+'_surfaces.obj')
-    gt.write_processed_ground_truth(fileout)
+  # confirm expected UTM
+  srs = osr.SpatialReference(wkt=meta['Projection'])
+  if not srs.IsProjected or 'UTM' not in srs.GetAttrValue('projcs'):
+    raise IOError('Ground truth DSM must be UTM')
 
-    # load all site perimeters
-    for p in item['perim']:
-      gt.load_site_perimeter(p[0],p[1])
+  # utm zone
+  meta['UTMZone'] = srs.GetUTMZone()
 
-    # site perimeter ground planes
-    fileout = os.path.join(outputpath,item['name']+'_ground_planes.txt')
-    gt.write_ground_planes(fileout)
+  # report metadata
+  print(json.dumps(meta,indent=2))
 
-    # subregion output
-    for p in item['perim']:
-      gt.construct_extruded_gt_model(p[0])
 
-      fileout = os.path.join(outputpath,p[0]+'_xy_polys.txt')
-      gt.write_xy_polys(p[0],fileout)
+  # ground truth pyvkm object
+  gt = vkm.ground_truth()
 
-      fileout = os.path.join(outputpath,p[0]+'_extruded.obj')
-      gt.write_extruded_gt_model(p[0],fileout)
+  # load base data (dsm, region, type)
+  gt.load_dsm_image(truth_file(data['dsm']))
+  gt.load_ground_truth_img_regions(truth_file(data['region']))
+  gt.load_surface_types(truth_file(data['type']))
+
+
+  # image to local x/y transformation
+  # --geotransform locates the center of the upper left pixel at [.5,.5],
+  #   while region files locate the center of the upper left pixel at [0,0].
+  #   The matrix "B" accomodates this half pixel shift.
+  # --this transform does not include the geotransform translational
+  #   shift [G[0],G[3]], which is instead reported in "*_info.json"
+  G = meta['GeoTransform']
+  A = np.array( [ [G[1],G[2],0], [G[4],G[5],0], [0,0,1] ], dtype=np.float)
+  B = np.array( [ [1,0,0.5], [0,1,0.5], [0,0,1]], dtype=np.float)
+  img_to_xy = np.matmul(A,B)
+  img_to_xy_vnl = vnl.matrix_fixed_3x3(img_to_xy)
+
+  gt.img_to_xy_trans(img_to_xy_vnl)
+
+  # z-offset = minimum valid DSM value
+  gt.z_off(meta['MinimumElevation'])
+
+  # UTM origin
+  origin = [G[0],G[3],meta['MinimumElevation']]
+
+  # VXL local vertical coordinate system (LVCS)
+  # useful for VXL-based point projection
+  utm_zone = abs(meta['UTMZone'])
+  is_south = meta['UTMZone']<0
+
+  utmobj = vpgl.utm()
+  (lon,lat) = utmobj.utm2lonlat(origin[0],origin[1],utm_zone,is_south)
+  elev = origin[2]
+
+  lvcs = vpgl.lvcs(
+    lat, lon, elev, vpgl.lvcs.cs_names.utm,
+    vpgl.lvcs.AngUnits.DEG, vpgl.lvcs.LenUnits.METERS
+  )
+
+
+  # ground truth processing
+  gt.snap_image_region_vertices()
+  # gt.convert_img_regions_to_meshes()
+  gt.process_region_containment()
+  gt.fit_region_planes()
+  gt.construct_polygon_soup()
+  gt.convert_to_meshes()
+
+
+  # output header
+  output_header = os.path.join(output_path,
+      os.path.splitext(os.path.basename(truth_json))[0])
+
+  # write surfaces
+  filesurf = output_header + '_surfaces.obj'
+  gt.write_processed_ground_truth(filesurf)
+
+  # ground truth info
+  gtinfo = {
+    "name": data["name"],
+    "projection": meta['Projection'],
+    "origin": origin,
+    "lvcs": lvcs.writes().replace('\n',' ').strip(),
+    "surfaces": os.path.basename(filesurf),
+  }
+
+  # write ground truth info to JSON
+  fileinfo = output_header + "_truth.json"
+  with open(fileinfo,'w') as fid:
+    json.dump(gtinfo,fid,indent=2)
+
+
+  # load all site perimeters
+  for item in data['perim']:
+    gt.load_site_perimeter(item['name'],truth_file(item['file']))
+
+  # site perimeter ground planes
+  fileground = output_header + '_ground_planes.txt'
+  gt.write_ground_planes(fileground)
+
+  # subregion output
+  for item in data['perim']:
+    name = item['name']
+
+    gt.construct_extruded_gt_model(name)
+
+    fileout = os.path.join(output_path, name+'_xy_polys.txt')
+    gt.write_xy_polys(name,fileout)
+
+    fileout = os.path.join(output_path, name+'_extruded.obj')
+    gt.write_extruded_gt_model(name,fileout)
+
 
 
 
@@ -151,9 +202,9 @@ def main(args=None):
 
   # setup input parser
   parser = argparse.ArgumentParser()
-  parser.add_argument('-g', '--groundtruth', dest='truthpath',
-      help='Ground truth directory', required=True)
-  parser.add_argument('-o', '--output', dest='outputpath',
+  parser.add_argument('-g', '--groundtruth', dest='truth_json',
+      help='Ground truth JSON file', required=True)
+  parser.add_argument('-o', '--output', dest='output_path',
       help='Output directory', required=True)
 
   # parse arguments as dict
