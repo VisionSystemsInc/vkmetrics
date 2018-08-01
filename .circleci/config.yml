@@ -18,15 +18,6 @@ jobs:
       - setup_remote_docker
 
       - run:
-          name: Install software
-          command: |
-            apk update
-            apk add bash py-pip
-            pip install docker-compose
-            docker-compose --version
-            docker ps
-
-      - run:
           name: Install JUST
           command: |
             wget -O /usr/local/bin/just https://github.com/VisionSystemsInc/just/releases/download/0.0.7/just-Linux-x86_64
@@ -38,15 +29,12 @@ jobs:
 
       - run:
           name: Build all dockers
-          # shell: /bin/bash -eo pipefail
           command: just build
 
       - run:
           name: Compile source code
-          # shell: /bin/bash -eo pipefail
           command: just compile
 
       - run:
           name: Tests
-          # shell: /bin/bash -eo pipefail
           command: just test
