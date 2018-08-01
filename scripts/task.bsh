@@ -40,7 +40,7 @@ case ${task_arg} in
       echo "RUNTIME_VOLUMES:"
       printf '  %s\n' "${RUNTIME_VOLUMES[@]}"
 
-      justify run pipenv run "${RUNTIME_SCRIPT_DOCKER}" truth-run \
+      justify run vkm pipenv run "${RUNTIME_SCRIPT_DOCKER}" truth-run \
           ${TRUTH_JSON_DOCKER} ${ARGS}
 
     ) 2>&1 | tee -a "${LOG_FILE}"
@@ -128,7 +128,7 @@ case ${task_arg} in
     echo "TRUTH_DIR CONTENTS"
     ls -la "${TRUTH_DIR_DOCKER}"
 
-    python3 "${VKM_SOURCE_DIR_DOCKER}/source/engine/truth.py" \
+    python3 "${VKM_SOURCE_DIR}/source/engine/truth.py" \
       -g "${TRUTH_JSON_DOCKER}" \
       -o "${OUTPUT_DIR_DOCKER}" \
       "${@}"
@@ -155,7 +155,7 @@ case ${task_arg} in
       echo "RUNTIME_VOLUMES:"
       printf '  %s\n' "${RUNTIME_VOLUMES[@]}"
 
-      justify run pipenv run "${RUNTIME_SCRIPT_DOCKER}" metrics-run \
+      justify run vkm pipenv run "${RUNTIME_SCRIPT_DOCKER}" metrics-run \
           ${TRUTH_JSON_DOCKER} ${INPUT_JSON_DOCKER} ${ARGS}
 
     ) 2>&1 | tee -a "${LOG_FILE}"
@@ -259,7 +259,7 @@ case ${task_arg} in
     echo "INPUT_DIR CONTENTS"
     ls -la "${INPUT_DIR_DOCKER}"
 
-    python3 "${VKM_SOURCE_DIR_DOCKER}/source/engine/metrics.py" \
+    python3 "${VKM_SOURCE_DIR}/source/engine/metrics.py" \
       -g "${TRUTH_JSON_DOCKER}" \
       -i "${INPUT_JSON_DOCKER}" \
       -o "${OUTPUT_DIR_DOCKER}" \

@@ -6,7 +6,6 @@ import glob
 import numpy as np
 import traceback
 
-import openmesh
 import vkm
 from vxl import vnl, vpgl
 

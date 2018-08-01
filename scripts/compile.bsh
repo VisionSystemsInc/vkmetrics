@@ -2,9 +2,9 @@
 
 set -euE
 
-pushd ${VKM_BUILD_DIR_DOCKER}
+pushd ${VKM_BUILD_DIR}
 if [ ! -f .cmake_ran ] || [ "${VKM_FORCE_RUN_CMAKE}" == "1" ]; then
-  cmake -G Ninja /src -DCMAKE_BUILD_TYPE=${VKM_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=/install
+  cmake -G Ninja ${VKM_SOURCE_DIR} -DCMAKE_BUILD_TYPE=${VKM_BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${VKM_INSTALL_DIR}
   touch .cmake_ran # Mark that the build files have successfully been created
 fi
 ninja

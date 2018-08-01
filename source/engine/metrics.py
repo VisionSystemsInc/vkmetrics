@@ -5,14 +5,13 @@ import copy
 import glob
 from collections import OrderedDict
 
-import openmesh
 import vkm
 from vxl import vpgl
 
 
 # POINT CONVERSION ROUTINES
 
-
+# LVCS point conversion:
 # Convert point through local vertical coordinate system (LVCS)
 # this function will take a local point in a source lvcs,
 # convert the point to global WGS84 space (lat,lon,elev),
@@ -22,9 +21,11 @@ from vxl import vpgl
 transform_point_convert = (vpgl.lvcs.cs_names.wgs84,vpgl.lvcs.AngUnits.DEG,
                            vpgl.lvcs.LenUnits.METERS)
 
+# helper function
 def print_tuple(tup,fmt='{:6.2f}'):
   return ','.join([fmt.format(e) for e in tup])
 
+# conversion function
 def convert_point_lvcs(pt_src,lvcs_src,lvcs_dst,verbose=False):
 
   # local_src to global
