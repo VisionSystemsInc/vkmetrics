@@ -230,13 +230,14 @@ def run_metrics(truth_json,input_json,output_path):
     met.find_z_offset()
     met.compute_best_match_3d_score_stats()
 
-    # report scores as json
-    scores = json.loads(met.json(), object_pairs_hook=OrderedDict)
-    # print(json.dumps(scores,indent=2))
-    # print()
-
     # report scores as printed array
     met.print_score_array()
+
+    # save scores as json
+    scores = json.loads(met.json(), object_pairs_hook=OrderedDict)
+    fileout = converted_file('metrics.json')
+    with open(fileout,'w') as fid:
+      json.dump(scores,fid,indent=2)
 
     # met.load_ground_planes(datagt['ground'])
     # fileout = os.path.join(output_path,name+"_registered.obj")
