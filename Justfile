@@ -26,7 +26,7 @@ function caseify()
         Docker-compose "${just_arg}" ${@+"${@}"}
         extra_args+=$#
       else
-        (justify build_recipes gosu tini vsi ninja cmake)
+        (justify build_recipes gosu tini vsi ninja cmake pipenv)
         Docker-compose build
       fi
       ;;
