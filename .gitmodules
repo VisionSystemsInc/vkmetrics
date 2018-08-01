@@ -3,7 +3,7 @@
 	url = https://github.com/vxl/vxl.git
 [submodule "external/openmesh"]
 	path = external/openmesh
-	url = git@bitbucket.org:visionsystemsinc/openmesh.git
+	url = https://www.graphics.rwth-aachen.de:9000/OpenMesh/OpenMesh.git
 [submodule "external/pyvxl"]
 	path = external/pyvxl
 	url = https://github.com/VisionSystemsInc/pyvxl.git
