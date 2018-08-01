@@ -74,12 +74,12 @@ function caseify()
       (justify build)
       (justify clean_compile clean_install)
       (justify compile)
-      (justify run pipenv sync)
+      (justify run vkm pipenv sync)
       ;;
 
     ### Testing tasks
     test) #Run unit tests
-      (justify run test)
+      (justify run vkm test)
       ;;
 
     ### Clean volumes
