@@ -7,9 +7,6 @@
 [submodule "external/pyvxl"]
 	path = external/pyvxl
 	url = https://github.com/VisionSystemsInc/pyvxl.git
-[submodule "external/pyopenmesh"]
-	path = external/pyopenmesh
-	url = git@bitbucket.org:visionsystemsinc/pyopenmesh.git
 [submodule "external/pybind11"]
 	path = external/pybind11
 	url = https://github.com/pybind/pybind11.git
