@@ -2,8 +2,9 @@ version: 2
 jobs:
   build:
     working_directory: ~/repo
+    shell: /bin/bash -eo pipefail
     docker:
-      - image: docker:18.03.0-ce-git
+      - image: vsiri/circleci:bash-compose-lfs
     steps:
 
       - checkout
@@ -37,15 +38,15 @@ jobs:
 
       - run:
           name: Build all dockers
-          shell: /bin/bash -eo pipefail
+          # shell: /bin/bash -eo pipefail
           command: just build
 
       - run:
           name: Compile source code
-          shell: /bin/bash -eo pipefail
+          # shell: /bin/bash -eo pipefail
           command: just compile
 
       - run:
           name: Tests
-          shell: /bin/bash -eo pipefail
+          # shell: /bin/bash -eo pipefail
           command: just test
