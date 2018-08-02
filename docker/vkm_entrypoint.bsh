@@ -3,6 +3,10 @@
 set -eu
 source /common_entrypoint.bsh
 
+for s in /install/lib/python3.5/site-packages/*.so; do
+  gosu user ln -sf "${s}" /venv/src-*/lib/python3.5/site-packages/
+done
+
 # check for pipenv lock file
 if [ ! -s "${VKM_SOURCE_DIR}/Pipfile.lock" ]; then
   pipenv lock
