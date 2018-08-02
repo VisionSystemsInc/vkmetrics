@@ -106,8 +106,8 @@ The JSON file is expected to contain the following fields:
 
 - **name**: model name
 - **coordinate_system**: model file coordinate system (currently only accepts LVCS)
-  - **type**: coordinate system type (e.g., LVCS)
-  - **parameters**: coordinate system description
+    - **type**: coordinate system type (e.g., LVCS)
+    - **parameters**: coordinate system description
 - **models**: performer model names/files
 
 ```
