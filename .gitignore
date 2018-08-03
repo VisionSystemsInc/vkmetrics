@@ -1,7 +1,6 @@
 /build*/
 /local*/
-local.env
-local_post.env
+local*.*
 docs
 *.pyc
 __pycache__/

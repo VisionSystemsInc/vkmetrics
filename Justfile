@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
-set -euE
 
-export CWD="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
-source_environment_files "${CWD}/vkm.env"
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then # If being sourced
+  set -euE
+fi
 
-#Import things like Docker-compose helper function
+source "${VSI_COMMON_DIR}/linux/just_env" "$(dirname "${BASH_SOURCE[0]}")"/vkm.env
+cd "${VKM_CWD}"
+
+# plugins
+source "${VSI_COMMON_DIR}/linux/docker_functions.bsh"
 source "${VSI_COMMON_DIR}/linux/just_docker_functions.bsh"
+source "${VSI_COMMON_DIR}/linux/just_git_functions.bsh"
 
+# main function
 function caseify()
 {
   local just_arg=$1
@@ -15,23 +21,19 @@ function caseify()
   case ${just_arg} in
 
     ### Docker build tasks
-    build) #Build all necessary docker images
-      (justify build recipes gosu ninja cmake)
-      (justify build main)
-      ;;
-    build_main) # Build maintenance docker images
-      Docker-compose -f "${VKM_CWD}/docker-compose.yml" build ${@+"${@}"}
-      extra_args+=$#
-      ;;
-
-    ### Code compilation
-    compile) #Build the source code
-      Docker-compose -f "${VKM_CWD}/docker-compose.yml" run compiler compile
+    build) # Build all necessary docker images
+      if [ "$#" -gt "0" ]; then
+        Docker-compose "${just_arg}" ${@+"${@}"}
+        extra_args+=$#
+      else
+        (justify build_recipes gosu tini vsi ninja cmake pipenv)
+        Docker-compose build
+      fi
       ;;
 
     ### Run tasks
-    run) # Start a container using the vkm image
-      Just-docker-compose -f "${VKM_CWD}/docker-compose.yml" run vkm ${@+"${@}"}
+    run_vkm) # Start a container using the vkm image
+      Just-docker-compose run vkm ${@+"${@}"}
       extra_args+=$#
       ;;
     run_compiler) # Start a container using the compiler image
@@ -39,59 +41,76 @@ function caseify()
       extra_args+=$#
       ;;
 
+    ### Code compilation
+    compile) # Build the source code
+      Just-docker-compose run compiler compile
+      ;;
+
+    ### Bash tasks (complex bash scripts that run within the Just environment)
+    truth) # Run ground truth routine
+      (source "${VKM_CWD}/scripts/task.bsh" truth "${@}")
+      extra_args+=$#
+      ;;
+    metrics) # Run metrics routine
+      (source "${VKM_CWD}/scripts/task.bsh" metrics "${@}")
+      extra_args+=$#
+      ;;
+
 
     ### Environment synchronize
-    sync) # Sync the environment so that everyone is on the same version. This
+    setup) # Run any special command to set up the environment for the first \
+      # time after checking out the repo. Usually population of volumes/databases \
+      # go here.
+      (justify _sync)
+      ;;
+    sync) # Synchronize the many aspects of the project when new code changes \
+          # are applied e.g. after "git checkout"
+      (justify _sync)
+      ;;
+
+    _sync) # Sync the environment so that everyone is on the same version. This
           # includes building the docker images, building the source code, etc.
       (justify git_submodule-update) # For those users who don't remember!
       (justify build)
-      (justify clean install) || :
+      (justify clean_compile clean_install)
       (justify compile)
-      (justify run pipenv sync)
-      ;;
-
-    sync_quiet) #Same as sync, but quieter
-      echo "==Updating submodules=="
-      (justify git_submodule-update) > /dev/null
-      echo "==Rebuilding docker images=="
-      (justify build) > /dev/null
-      echo "==Cleaning up old install directory=="
-      (justify clean install) &>/dev/null || :
-      echo "==Incremental build and install=="
-      (justify compile) > /dev/null
-      echo "==Incremental build and install=="
-      (justify run pipenv sync)
-      echo "Sync done. Database still running."
+      (justify run vkm pipenv sync)
       ;;
 
     ### Testing tasks
     test) #Run unit tests
-      (justify run test)
+      (justify run vkm test)
       ;;
 
-    ### Clean tasks (e.g., remove volumes)
+    ### Clean volumes
     clean_all) # Delete all local volumes
       ask_question "Are you sure you want to remove all local volumes?" n
       (justify clean_compile clean_install clean_venv)
       ;;
+
     clean_compile) # Delete only build artifacts volume
-      Docker volume rm "${COMPOSE_PROJECT_NAME}_vkm-build"
+      (justify _clean_volume "${VKM_BUILD_DIR}")
       ;;
     clean_install) # Delete only install volume
-      Docker volume rm "${COMPOSE_PROJECT_NAME}_vkm-bin"
+      (justify _clean_volume "${VKM_INSTALL_DIR}")
       ;;
-    clean_venv) # Delete only virtual env volume. This provides a \
-                # clean slate for the virtual env.
-      Docker volume rm "${COMPOSE_PROJECT_NAME}_vkm-venv"
+    clean_venv) # delete only venv volume
+      (justify _clean_volume "${VKM_VENV_DIR}")
+      ;;
+
+    _clean_volume)
+      VOLUME_NAME="${COMPOSE_PROJECT_NAME}_${1}"
+      if docker volume inspect "${VOLUME_NAME}" &> /dev/null; then
+        Docker volume rm "${VOLUME_NAME}"
+      else
+        echo "${VOLUME_NAME} already removed"
+      fi
+      extra_args+=$#
       ;;
 
     ### Debugging tasks
-    d) # Execute arbitrary docker command in Just environment
-      Docker ${@+"${@}"}
-      extra_args+=$#
-      ;;
-    dc) # Execute arbitrary docker-compose command in Just environment
-      Docker-compose ${@+"${@}"}
+    _source) # source arbitrary script in Just environment
+      (source ${@+"${@}"})
       extra_args+=$#
       ;;
     list_volumes) # List docker volumes relevant to your environment
@@ -105,3 +124,5 @@ function caseify()
       ;;
   esac
 }
+
+if ! command -v justify &> /dev/null; then caseify ${@+"${@}"};fi

@@ -5,9 +5,19 @@ services:
     build:
       context: .
       dockerfile: docker/compiler.Dockerfile
-    image: ${VKM_DOCKER_REPO}:compiler
+
+    # prevent clobbering images from other users
+    image: ${VKM_DOCKER_REPO}:compiler_${VKM_USERNAME}
+
+    environment:
+      - DOCKER_UID=${VKM_UID}
+      - DOCKER_GIDS=${VKM_GIDS}
+      - DOCKER_GROUP_NAMES=${VKM_GROUP_NAMES}
+      - DOCKER_USERNAME=${VKM_USERNAME_DOCKER}
+      - DOCKER_HOME=${VKM_HOME_DOCKER}
+
     volumes:
-      - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}
+      - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}:ro
       - ${VKM_BUILD_DIR}:${VKM_BUILD_DIR_DOCKER}
       - ${VKM_INSTALL_DIR}:${VKM_INSTALL_DIR_DOCKER}
 
@@ -15,19 +25,21 @@ services:
     build:
       context: .
       dockerfile: docker/vkm.Dockerfile
-    image: ${VKM_DOCKER_REPO}:vkm
+
+    # prevent clobbering images from other users
+    image: ${VKM_DOCKER_REPO}:vkm_${VKM_USERNAME}
+
     environment:
-      - USER_ID=${VKM_UID}
-      - GROUP_ID=${VKM_GID}
+      - DOCKER_UID=${VKM_UID}
+      - DOCKER_GIDS=${VKM_GIDS}
+      - DOCKER_GROUP_NAMES=${VKM_GROUP_NAMES}
+      - DOCKER_USERNAME=${VKM_USERNAME_DOCKER}
+      - DOCKER_HOME=${VKM_HOME_DOCKER}
+
     volumes:
       - ${VKM_SOURCE_DIR}:${VKM_SOURCE_DIR_DOCKER}
       - ${VKM_INSTALL_DIR}:${VKM_INSTALL_DIR_DOCKER}
       - ${VKM_VENV_DIR}:${VKM_VENV_DIR_DOCKER}
-    cap_add:
-      - SYS_PTRACE
-    security_opt:
-      - seccomp:unconfined
-
 
 volumes:
   vkm-bin:

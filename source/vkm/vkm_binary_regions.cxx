@@ -8,7 +8,10 @@
 #include "vkm_binary_regions.h"
 
 
-bool vkm_binary_regions::create_binary_image(std::string const& name, std::vector<vgl_polygon<double> > const& xy_polys){
+bool vkm_binary_regions::create_binary_image(
+    std::string const& name,
+    std::vector<vgl_polygon<double> > const& xy_polys)
+{
   size_t n = xy_polys.size();
   if( n == 0){
     std::cout << "No xy_polys to create binary image" << std::endl;
@@ -71,7 +74,10 @@ bool vkm_binary_regions::create_binary_image(std::string const& name, std::vecto
   return true;
 }
 
-void vkm_binary_regions::extract_region_boundaries(std::string const& name){
+
+void vkm_binary_regions::extract_region_boundaries(
+    std::string const& name)
+{
   size_t ni = bin_images_[name].ni(), nj = bin_images_[name].nj();
   vil_image_view<unsigned char> region_image(ni, nj, 3);
   region_image.fill((unsigned char) 0);
@@ -79,7 +85,7 @@ void vkm_binary_regions::extract_region_boundaries(std::string const& name){
   bin.fill(false);
   for(size_t j = 0; j<nj; ++j)
     for(size_t i = 0; i<ni; ++i)
-      if(bin_images_[name](i,j)>0){
+      if(bin_images_[name](i,j)>0) {
         bin(i,j) = true;
         region_image(i, j, 0) = (unsigned char) 255;
         region_image(i, j, 1) = (unsigned char) 255;
@@ -94,7 +100,7 @@ void vkm_binary_regions::extract_region_boundaries(std::string const& name){
   size_t nr = regions.size();
   for (size_t ir = 0; ir < nr; ++ir) {
     size_t nc = regions[ir].size();
-    for(size_t k = 0; k<nc; ++k){
+    for(size_t k = 0; k<nc; ++k) {
       size_t v = regions[ir][k].j;
       size_t u_start = regions[ir][k].ilo, u_end = regions[ir][k].ihi;
       region_image(u_start, v, 0) = (unsigned char) 255;
@@ -104,13 +110,17 @@ void vkm_binary_regions::extract_region_boundaries(std::string const& name){
       region_image(u_end, v, 0) = (unsigned char) 255;
       region_image(u_end, v, 1) = (unsigned char) 0;
       region_image(u_end, v, 2) = (unsigned char) 0;
-
     }
   }
   region_images_[name] = region_image;
 }
-void vkm_binary_regions::region_metrics(std::string const& name_a, std::string const& name_b, double& int_over_union, double& int_over_area_a, double& int_over_area_b,
-                    double b_rel_to_a_x, double b_rel_to_a_y ){
+
+
+void vkm_binary_regions::region_metrics(
+    std::string const& name_a, std::string const& name_b,
+    double& int_over_union, double& int_over_area_a, double& int_over_area_b,
+    double b_rel_to_a_x, double b_rel_to_a_y)
+{
   const vgl_box_2d<double>& bb_a = bounding_boxes_[name_a];
   const vgl_box_2d<double>& bb_b = bounding_boxes_[name_b];
   // intersect the bounding boxes
@@ -120,7 +130,7 @@ void vkm_binary_regions::region_metrics(std::string const& name_a, std::string c
   double xe = xs + w, ye = ys +h;
   double intersection_area = 0.0, union_area = 0.0;
   double area_a = 0.0, area_b = 0.0;
-  for(double y = ys; y<=ye; ++y)
+  for(double y = ys; y<=ye; ++y) {
     for(double x = xs; x<xe; ++x){
       vgl_point_2d<double> pa(x, y);
       vgl_point_2d<double> pb(x + b_rel_to_a_x, y + b_rel_to_a_y);
@@ -137,6 +147,7 @@ void vkm_binary_regions::region_metrics(std::string const& name_a, std::string c
       intersection_area += inter;
       union_area += un;
     }
+  }
   if(union_area == 0.0)
     int_over_union = 0.0;
   else
@@ -153,8 +164,11 @@ void vkm_binary_regions::region_metrics(std::string const& name_a, std::string c
     int_over_area_b = intersection_area/area_b;
 }
 
-vil_image_view<unsigned char> vkm_binary_regions::generate_overlay_image(std::string const& name_a, std::string const& name_b,
-                                                                     double b_rel_to_a_x , double b_rel_to_a_y){
+
+vil_image_view<unsigned char> vkm_binary_regions::generate_overlay_image(
+    std::string const& name_a, std::string const& name_b,
+    double b_rel_to_a_x, double b_rel_to_a_y)
+{
   const vgl_box_2d<double>& bb_a = bounding_boxes_[name_a];
   const vgl_box_2d<double>& bb_b = bounding_boxes_[name_b];
   // intersect the bounding boxes

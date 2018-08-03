@@ -6,10 +6,11 @@ set(PYVKM_SOURCES
   pyvkm.cxx
   pyvkm_ground_truth.h  pyvkm_ground_truth.cxx
   pyvkm_metrics.h  pyvkm_metrics.cxx
+  pyvkm_obj_io.h  pyvkm_obj_io.cxx
 )
 
 pybind11_add_module(pyvkm ${PYVKM_SOURCES})
-target_link_libraries(pyvkm PRIVATE OpenMeshCore OpenMeshTools)
+target_link_libraries(pyvkm PRIVATE vkm OpenMeshCore OpenMeshTools)
 set_target_properties(pyvkm PROPERTIES OUTPUT_NAME "vkm")
 
 execute_process(

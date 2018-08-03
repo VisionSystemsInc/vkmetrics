@@ -2,8 +2,9 @@ version: 2
 jobs:
   build:
     working_directory: ~/repo
+    shell: /bin/bash -eo pipefail
     docker:
-      - image: docker:18.03.0-ce-git
+      - image: vsiri/circleci:bash-compose-lfs
     steps:
 
       - checkout
@@ -14,16 +15,22 @@ jobs:
             git submodule sync
             git submodule update --init --recursive
 
+      - run:
+          name: Additional setup
+          command: |
+            touch local.env local_post.env
+            sed -i -e 's/group_names/id -G -n/g' vkm.env
+
       - setup_remote_docker
 
       - run:
-          name: Install software
+          name: Install JUST
           command: |
             apk update
-            apk add bash py-pip
-            pip install docker-compose
-            docker-compose --version
-            docker ps
+            apk add util-linux
+            wget -O /usr/local/bin/just https://github.com/VisionSystemsInc/just/releases/download/0.0.7/just-Linux-x86_64
+            chmod 755 /usr/local/bin/just
+            just --version
 
       - run:
           name: Smuggle repo to remote docker
@@ -31,21 +38,12 @@ jobs:
 
       - run:
           name: Build all dockers
-          shell: /bin/bash -eo pipefail
-          command: |
-            source setup.env
-            just build
+          command: just build
 
       - run:
           name: Compile source code
-          shell: /bin/bash -eo pipefail
-          command: |
-            source setup.env
-            just compile
+          command: just compile
 
       - run:
           name: Tests
-          shell: /bin/bash -eo pipefail
-          command: |
-            source setup.env
-            just test
+          command: just test

@@ -1,6 +1,8 @@
 FROM vsiri/recipe:gosu as gosu
+FROM vsiri/recipe:tini as tini
 FROM vsiri/recipe:ninja as ninja
 FROM vsiri/recipe:cmake as cmake
+FROM vsiri/recipe:vsi as vsi
 
 # This image is responsible for setting up the install folder. This is accomplished
 # in two pieces:
@@ -15,19 +17,28 @@ FROM vsiri/recipe:cmake as cmake
 
 FROM debian:stretch
 
-SHELL ["bash", "-euxvc"]
+SHELL ["/usr/bin/env", "bash", "-euxvc"]
 
 RUN apt-get update; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        python python3-dev python-pip gcc g++ curl bzip2 rsync unzip ca-certificates; \
+        python python3-dev python-pip libgeotiff-dev \
+        gcc g++ curl bzip2 rsync unzip ca-certificates; \
     rm -rf /var/lib/apt/lists/*
 
+# copy from recipes
 COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
+COPY --from=tini /usr/local/bin/tini /usr/local/bin/tini
 COPY --from=ninja /usr/local/bin/ninja /usr/local/bin/ninja
 COPY --from=cmake /cmake /usr/local/
+COPY --from=vsi /vsi /vsi
 
-ADD docker/compiler_entrypoint.bsh /
-RUN chmod 755 /compiler_entrypoint.bsh
-ENTRYPOINT ["/compiler_entrypoint.bsh"]
+# process recipes
+RUN chmod u+s /usr/local/bin/gosu
 
+# entrypoint setup
+COPY docker/common_entrypoint.bsh docker/compiler_entrypoint.bsh /
+RUN chmod 755 /common_entrypoint.bsh /compiler_entrypoint.bsh
+ENTRYPOINT ["/usr/local/bin/tini", "/usr/bin/env", "bash", "/compiler_entrypoint.bsh"]
+
+# default command
 CMD ["bash"]

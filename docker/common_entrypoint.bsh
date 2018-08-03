@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# environment variables
+source "${VSI_COMMON_DIR:-/vsi}/linux/just_env" "${VSI_SOURCE_DIR:-/src}/vkm.env"
+
+# workaround to correct VSI_PATH_ESC within docker
+source "${VSI_COMMON_DIR}/linux/docker_entrypoint.bsh"
+docker_convert_paths
+
+# run functions as root
+if [ "${ALREADY_RUN_ONCE+set}" != "set" ]; then
+  # create the user and associated groups and handle nfs symlinks
+
+  # JUST_DOCKER_ENTRYPOINT_INTERNAL_DIRS will automatically chown
+  # all files in volumes to match the user. If this takes too long
+  # and you don't need this feature, remove the ONE line, but leave
+  # the docker_entrypoint.bsh call
+  JUST_DOCKER_ENTRYPOINT_INTERNAL_DIRS="${JUST_DOCKER_ENTRYPOINT_INTERNAL_VOLUMES}" \
+  /usr/bin/env bash /vsi/linux/docker_entrypoint.bsh
+
+  # Rerun main entrypoint as user now, (skipping the root part via ALREADY_RUN_ONCE)
+  ALREADY_RUN_ONCE=1 exec gosu ${DOCKER_USERNAME} /usr/bin/env bash $0 ${@+"${@}"}
+fi
+
+# gosu alias for sudo
+function sudo()
+{
+  gosu root ${@+"${@}"}
+}
+export -f sudo
+
+# Remove duplicate VKM_*_DOCKER variables
+source "${VSI_COMMON_DIR}/linux/docker_functions.bsh"
+filter_docker_variables

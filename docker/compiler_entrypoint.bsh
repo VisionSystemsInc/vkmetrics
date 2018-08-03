@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
 
 set -eu
-# groupadd user -g ${GROUP_ID-1000} -o || :
-# useradd -u ${USER_ID-1000} -o --create-home --home-dir /home/user -g user user || :
-
-#TODO: clean up hack with something from vsi_common
-source /src/wrap
+source /common_entrypoint.bsh
 
 if [ "${@+$1}" == "compile" ]; then
-  exec bash /src/scripts/compile.bsh
+  exec bash "${VKM_SOURCE_DIR}/scripts/compile.bsh"
 else
   exec "${@}"
 fi
