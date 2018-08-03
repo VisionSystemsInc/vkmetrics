@@ -20,7 +20,7 @@ This project is designed to be run within a docker container, meaning the depend
 - [git](https://git-scm.com/downloads) version control (how you should be downloading this repo)
 - [Docker](https://www.docker.com/get-docker) platform independent containers
 - [Docker compose](https://docs.docker.com/compose/install/) manages multiple docker applications (v1.20 or newer)
-- [J.U.S.T.](https://github.com/VisionSystemsInc/just/releases) simplified tasking
+- [J.U.S.T.](https://github.com/VisionSystemsInc/just/releases) simplified tasking (v0.0.8 or newer)
 
 ### Submodules
 
@@ -34,7 +34,7 @@ Submodules include:
 
 - **Openmesh** Library for generic and efficient representation and manipulation of polygonal meshes. More info at https://www.openmesh.org/
 - **VXL** The Vision something Library. contains a wide array of different computer vision, 3D processing and mathematics libraries for use in computer vision and related applications. See http://vxl.sourceforge.net/ for more information.
-- **pybind11**pybind11 is a lightweight header-only library that exposes C++ types in Python and vice versa, mainly to create Python bindings of existing C++ code. See https://pybind11.readthedocs.io/en/stable/ for more information.  VXL and VK-Metric functionality are accessible in python using pybind11 bindings.
+- **pybind11** pybind11 is a lightweight header-only library that exposes C++ types in Python and vice versa, mainly to create Python bindings of existing C++ code. See https://pybind11.readthedocs.io/en/stable/ for more information.  VXL and VK-Metric functionality are accessible in python using pybind11 bindings.
 
 ### Install (first time instructions):
 

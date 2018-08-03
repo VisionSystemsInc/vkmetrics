@@ -49,7 +49,10 @@ RUN build_deps="libgdal-dev python3-dev g++"; \
     if [ ! -s Pipfile.lock ]; then \
       pipenv lock; \
     fi; \
-    pipenv install; \
+    # install numpy first (using version specified in Pipfile.lock)
+    pipenv install --ignore-pipfile numpy; \
+    # install all remaining items from Pipfile.lock
+    pipenv sync; \
     # Cleanup
     apt-get purge -y --auto-remove ${build_deps}; \
     rm -r /var/lib/apt/lists/* /src/*
