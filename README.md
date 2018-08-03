@@ -1,8 +1,20 @@
 This README is incomplete, but will have additions made to it as the project develops.  
 
-**Please clone with the `--recursive` flag!!**
+# TL;DR
+
+Install dependencies:
+
+- **git** [instructions](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- **docker** [instructions](https://docs.docker.com/compose/install/)
+- **docker-compose** at least v1.22, [instructions](https://docs.docker.com/compose/install/)
+- **JUST** at least v0.0.8, [instructions](https://github.com/VisionSystemsInc/just)
+
+Clone repo & setup VK-metrics system
 ```
-git clone --recursive git@bitbucket.org:visionsystemsinc/vkm.git
+cd <PARENT_DIRECTORY> # where <PARENT_DIRECTORY> is a directory of your choice
+git clone --recursive https://github.com/VisionSystemsInc/vkmetrics.git
+cd vkmetrics
+just setup
 ```
 
 # VK-Metrics
