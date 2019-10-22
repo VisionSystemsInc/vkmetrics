@@ -36,9 +36,8 @@ COPY --from=vsi /vsi /vsi
 RUN chmod u+s /usr/local/bin/gosu
 
 # entrypoint setup
-COPY docker/common_entrypoint.bsh docker/compiler_entrypoint.bsh /
-RUN chmod 755 /common_entrypoint.bsh /compiler_entrypoint.bsh
-ENTRYPOINT ["/usr/local/bin/tini", "/usr/bin/env", "bash", "/compiler_entrypoint.bsh"]
+COPY docker/compiler.Justfile /
+ENTRYPOINT ["/usr/local/bin/tini", "--", "/usr/bin/env", "bash", "/vsi/linux/just_entrypoint.sh"]
 
 # default command
 CMD ["bash"]

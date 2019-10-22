@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
+: ${VSI_COMMON_DIR=/vsi}
+: ${VSI_SOURCE_DIR=/src}
+
 # environment variables
-source "${VSI_COMMON_DIR:-/vsi}/linux/just_env" "${VSI_SOURCE_DIR:-/src}/vkm.env"
+source "${VSI_COMMON_DIR}/linux/just_env" "${VSI_SOURCE_DIR}/vkm.env"
 
 # workaround to correct VSI_PATH_ESC within docker
 source "${VSI_COMMON_DIR}/linux/docker_entrypoint.bsh"

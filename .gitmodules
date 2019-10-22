@@ -10,3 +10,6 @@
 [submodule "external/pybind11"]
 	path = external/pybind11
 	url = https://github.com/pybind/pybind11.git
+[submodule "external/vsi_common"]
+	path = external/vsi_common
+	url = git@github.com:VisionSystemsInc/vsi_common.git

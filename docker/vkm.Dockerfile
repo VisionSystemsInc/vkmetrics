@@ -23,7 +23,7 @@ COPY --from=pipenv /tmp/pipenv /tmp/pipenv
 
 # process recipes
 RUN chmod u+s /usr/local/bin/gosu
-RUN python3 /tmp/pipenv/get-pipenv; rm -r /tmp/pipenv
+RUN /tmp/pipenv/get-pipenv; rm -rf /tmp/pipenv || :
 
 # PIPENV setup
 ENV WORKON_HOME=/venv \
@@ -61,9 +61,8 @@ ENV LD_LIBRARY_PATH=/install/lib \
     PATH="/install/bin:${PATH}"
 
 # entrypoint setup
-COPY docker/common_entrypoint.bsh docker/vkm_entrypoint.bsh /
-RUN chmod 755 /common_entrypoint.bsh /vkm_entrypoint.bsh
-ENTRYPOINT ["/usr/local/bin/tini", "/usr/bin/env", "bash", "/vkm_entrypoint.bsh"]
+COPY docker/vkm.Justfile /
+ENTRYPOINT ["/usr/local/bin/tini", "--", "/usr/bin/env", "bash", "/vsi/linux/just_entrypoint.sh"]
 
 # default command
 CMD ["enter"]
